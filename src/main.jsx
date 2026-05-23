@@ -230,9 +230,9 @@ function App() {
     } = await supabase
       .from("matches")
       .select("*")
-      .order("match_no", {
-        ascending: true,
-      });
+      .order("match_date", {
+  ascending: true,
+});
 
     if (matchError) {
       console.error(matchError);

@@ -65,12 +65,32 @@ function App() {
     }
   }, [session]);
 
-  async function loadProfile() {
-    const { data } = await supabase
+ async function loadProfile() {
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .maybeSingle();
+
+  if (!data) {
+    const username =
+      session.user.user_metadata?.username || session.user.email;
+
+    const { data: newProfile } = await supabase
       .from("profiles")
-      .select("*")
-      .eq("id", session.user.id)
-      .maybeSingle();
+      .upsert({
+        id: session.user.id,
+        email: session.user.email,
+        username: username,
+      })
+      .select()
+      .single();
+
+    setProfile(newProfile);
+  } else {
+    setProfile(data);
+  }
+}
 
     if (!data) {
       const username =

@@ -1878,7 +1878,7 @@ function App() {
     marginTop: "10px"
   }}
 >
-  Buttle World 2026
+  Battle World 2026
 </h1><p className="avatar-user"><AvatarBadge size="large" clickable /> <span>{t.user}: {username}</span></p>
       <button onClick={() => setShowDashboardSettings(!showDashboardSettings)} className="btn blue">{t.settings}</button>
       {showDashboardSettings && <>

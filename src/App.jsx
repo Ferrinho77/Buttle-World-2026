@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
-import logo from "./assets/logo.png";
+import logo from "./assets/Logo.png";
 import "./App.css";
 import { matches, groups, knockoutRounds, topScorers } from "./data";
 import { translations } from "./translations";
@@ -1319,7 +1319,15 @@ function App() {
           <button onClick={() => setSelectedLeague(null)} className="back-dashboard-btn">⬅ {t.backToDashboard}</button>
         </div>
         <img src={logo} alt="logo" className="logo" />
-        <h1>{selectedLeague.name}</h1>
+        <h1
+  style={{
+    color: "#ffffff",
+    textShadow: "0 0 10px #00e5ff",
+    fontWeight: "900"
+  }}
+>
+  {selectedLeague.name}
+</h1>
         <p>{t.leagueCode}: {selectedLeague.code}</p>
 
         <div className="tabs">
@@ -1861,7 +1869,17 @@ function App() {
   return (
     <div className="page"><div className="card">
       <img src={logo} alt="logo" className="logo" />
-      <h1>{t.dashboard}</h1><p className="avatar-user"><AvatarBadge size="large" clickable /> <span>{t.user}: {username}</span></p>
+      <h1
+  style={{
+    color: "#00e5ff",
+    textShadow: "0 0 12px #00e5ff",
+    fontWeight: "900",
+    fontSize: "32px",
+    marginTop: "10px"
+  }}
+>
+  Buttle World 2026
+</h1><p className="avatar-user"><AvatarBadge size="large" clickable /> <span>{t.user}: {username}</span></p>
       <button onClick={() => setShowDashboardSettings(!showDashboardSettings)} className="btn blue">{t.settings}</button>
       {showDashboardSettings && <>
         <div className="league-box">
@@ -1901,13 +1919,26 @@ function App() {
         </div>
       </div>}
       <div className="dashboard-action-box">
-        <h2>{t.createLeague}</h2>
+       <h2
+  style={{
+    color: "#ffffff",
+    textShadow: "0 0 8px #00e5ff"
+  }}
+>
+  {t.createLeague}
+</h2>
         <input placeholder={t.leagueName} value={leagueName} onChange={(e) => setLeagueName(e.target.value)} />
         <button onClick={createLeague} className="btn green">{t.createLeague}</button>
       </div>
       <div className="dashboard-action-box">
-        <h2>{t.joinLeague}</h2>
-        <input placeholder={t.inviteCode} value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
+<h2
+  style={{
+    color: "#ffffff",
+    textShadow: "0 0 8px #00e5ff"
+  }}
+>
+  {t.joinLeague}
+</h2>        <input placeholder={t.inviteCode} value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
         <button onClick={joinLeague} className="btn blue">{t.joinLeague}</button>
       </div>
       <h2>{t.myLeagues}</h2>
@@ -1919,7 +1950,15 @@ function App() {
             <button className="btn green" onClick={() => renameLeague(league.id)}>{t.saveLeagueName}</button>
             <button className="btn" onClick={() => { setEditingLeagueId(null); setEditingLeagueName(""); }}>{t.cancel}</button>
           </> : <>
-            <div onClick={() => openLeague(league)} style={{ cursor: "pointer" }}><strong>{league.name}</strong><p>{t.code}: {league.code}</p></div>
+            <div onClick={() => openLeague(league)} style={{ cursor: "pointer" }}><strong
+  style={{
+    color: "#ffffff",
+    textShadow: "0 0 8px #00e5ff",
+    fontSize: "20px"
+  }}
+>
+  {league.name}
+</strong><p>{t.code}: {league.code}</p></div>
             {isOwner && <button className="btn blue" onClick={() => { setEditingLeagueId(league.id); setEditingLeagueName(league.name); }}>{t.changeName}</button>}
             <button className="btn" onClick={() => deleteLeague(league)}>{isOwner ? t.deleteLeague : t.leaveLeague}</button>
           </>}

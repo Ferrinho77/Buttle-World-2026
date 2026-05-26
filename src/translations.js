@@ -1,6 +1,6 @@
 export const translations = {
   "it": {
-    "appTitle": "Buttle World 2026",
+    "appTitle": "Battle World 2026",
     "dashboard": "Dashboard",
     "username": "Username",
     "email": "Email",
@@ -174,7 +174,7 @@ export const translations = {
     "predictionsClosedTournamentStarted": "I pronostici sono bloccati dopo l'inizio della prima partita del torneo"
   },
   "en": {
-    "appTitle": "Buttle World 2026",
+    "appTitle": "Battle World 2026",
     "dashboard": "Dashboard",
     "username": "Username",
     "email": "Email",
@@ -348,7 +348,7 @@ export const translations = {
     "predictionsClosedTournamentStarted": "Predictions are locked after the first match of the tournament"
   },
   "ro": {
-    "appTitle": "Buttle World 2026",
+    "appTitle": "Battle World 2026",
     "dashboard": "Tablou principal",
     "username": "Utilizator",
     "email": "Email",

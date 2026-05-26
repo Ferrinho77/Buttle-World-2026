@@ -1255,7 +1255,7 @@ function App() {
     return (
       <div className="page"><div className="card">
         <img src={logo} alt="logo" className="logo" />
-        <h1>{t.resetPasswordTitle || "Reset Password"}</h1>
+        <h1 className="app-title small-title">{t.resetPasswordTitle || "Reset Password"}</h1>
         <p className="bonus-help">{t.resetPasswordHelp || "Inserisci la nuova password e confermala."}</p>
         <input type="password" placeholder={t.newPassword} value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} />
         <input type="password" placeholder={t.confirmPassword} value={resetConfirmPassword} onChange={(e) => setResetConfirmPassword(e.target.value)} />
@@ -1270,7 +1270,7 @@ function App() {
     return (
       <div className="page"><div className="card">
         <img src={logo} alt="logo" className="logo" />
-        <h1>{t.appTitle}</h1>
+        <h1 className="app-title login-title">{t.appTitle}</h1>
         <input placeholder={t.username} value={username} onChange={(e) => setUsername(e.target.value)} />
         <input placeholder={t.email} value={email} onChange={(e) => setEmail(e.target.value)} />
         <input type="password" placeholder={t.password} value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -1319,15 +1319,7 @@ function App() {
           <button onClick={() => setSelectedLeague(null)} className="back-dashboard-btn">⬅ {t.backToDashboard}</button>
         </div>
         <img src={logo} alt="logo" className="logo" />
-        <h1
-  style={{
-    color: "#ffffff",
-    textShadow: "0 0 10px #00e5ff",
-    fontWeight: "900"
-  }}
->
-  {selectedLeague.name}
-</h1>
+        <h1 className="app-title league-title">{selectedLeague.name}</h1>
         <p>{t.leagueCode}: {selectedLeague.code}</p>
 
         <div className="tabs">
@@ -1869,17 +1861,7 @@ function App() {
   return (
     <div className="page"><div className="card">
       <img src={logo} alt="logo" className="logo" />
-      <h1
-  style={{
-    color: "#00e5ff",
-    textShadow: "0 0 12px #00e5ff",
-    fontWeight: "900",
-    fontSize: "32px",
-    marginTop: "10px"
-  }}
->
-  Battle World 2026
-</h1><p className="avatar-user"><AvatarBadge size="large" clickable /> <span>{t.user}: {username}</span></p>
+      <h1 className="app-title dashboard-title">{t.appTitle}</h1><p className="avatar-user"><AvatarBadge size="large" clickable /> <span>{t.user}: {username}</span></p>
       <button onClick={() => setShowDashboardSettings(!showDashboardSettings)} className="btn blue">{t.settings}</button>
       {showDashboardSettings && <>
         <div className="league-box">
@@ -1919,26 +1901,13 @@ function App() {
         </div>
       </div>}
       <div className="dashboard-action-box">
-       <h2
-  style={{
-    color: "#ffffff",
-    textShadow: "0 0 8px #00e5ff"
-  }}
->
-  {t.createLeague}
-</h2>
+        <h2>{t.createLeague}</h2>
         <input placeholder={t.leagueName} value={leagueName} onChange={(e) => setLeagueName(e.target.value)} />
         <button onClick={createLeague} className="btn green">{t.createLeague}</button>
       </div>
       <div className="dashboard-action-box">
-<h2
-  style={{
-    color: "#ffffff",
-    textShadow: "0 0 8px #00e5ff"
-  }}
->
-  {t.joinLeague}
-</h2>        <input placeholder={t.inviteCode} value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
+        <h2>{t.joinLeague}</h2>
+        <input placeholder={t.inviteCode} value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
         <button onClick={joinLeague} className="btn blue">{t.joinLeague}</button>
       </div>
       <h2>{t.myLeagues}</h2>
@@ -1950,15 +1919,7 @@ function App() {
             <button className="btn green" onClick={() => renameLeague(league.id)}>{t.saveLeagueName}</button>
             <button className="btn" onClick={() => { setEditingLeagueId(null); setEditingLeagueName(""); }}>{t.cancel}</button>
           </> : <>
-            <div onClick={() => openLeague(league)} style={{ cursor: "pointer" }}><strong
-  style={{
-    color: "#ffffff",
-    textShadow: "0 0 8px #00e5ff",
-    fontSize: "20px"
-  }}
->
-  {league.name}
-</strong><p>{t.code}: {league.code}</p></div>
+            <div onClick={() => openLeague(league)} style={{ cursor: "pointer" }}><strong>{league.name}</strong><p>{t.code}: {league.code}</p></div>
             {isOwner && <button className="btn blue" onClick={() => { setEditingLeagueId(league.id); setEditingLeagueName(league.name); }}>{t.changeName}</button>}
             <button className="btn" onClick={() => deleteLeague(league)}>{isOwner ? t.deleteLeague : t.leaveLeague}</button>
           </>}

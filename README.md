@@ -1,2 +1,2 @@
-# Fanta World Cup v2
+# Battle World 2026
 Aggiunge pagina lega, partite, pronostici e salvataggio su Supabase.

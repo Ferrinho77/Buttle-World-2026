@@ -2,8 +2,25 @@ import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import logo from "./assets/Logo.png";
 import "./App.css";
+import LeagueShell from "./components/layout/LeagueShell";
+import GroupPredictions from "./components/predictions/GroupPredictions";
+import KnockoutPredictions from "./components/predictions/KnockoutPredictions";
+import UsersPredictions from "./components/predictions/UsersPredictions";
+import FinalBracket from "./components/bracket/FinalBracket";
+import AdminPanel from "./components/admin/AdminPanel";
+import LeagueHome from "./components/league/LeagueHome";
+import ParticipantsRanking from "./components/rankings/ParticipantsRanking";
+import LiveCenter from "./components/live/LiveCenter";
 import { matches, groups, knockoutRounds, topScorers } from "./data";
 import { translations } from "./translations";
+
+
+const LIVE_REFRESH_MS = 10 * 60 * 1000;
+const IDLE_REFRESH_MS = 60 * 60 * 1000;
+
+function getNextSyncDate(intervalMs) {
+  return new Date(Date.now() + intervalMs);
+}
 
 function App() {
   const [email, setEmail] = useState("");
@@ -20,6 +37,8 @@ function App() {
   const [adminMatchFilter, setAdminMatchFilter] = useState("all");
   const [lastLiveSync, setLastLiveSync] = useState(null);
   const [liveSyncStatus, setLiveSyncStatus] = useState("");
+  const [liveSyncMode, setLiveSyncMode] = useState("idle");
+  const [nextLiveSyncAt, setNextLiveSyncAt] = useState(null);
   const [nowTick, setNowTick] = useState(new Date());
   const [language, setLanguage] = useState(localStorage.getItem("lang") || "it");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -64,6 +83,7 @@ function App() {
   const [allBonusPredictions, setAllBonusPredictions] = useState([]);
   const [allPredictions, setAllPredictions] = useState([]);
   const [realResults, setRealResults] = useState({});
+  const [matchEvents, setMatchEvents] = useState({});
   const [selectedTopScorer, setSelectedTopScorer] = useState("");
   const [finalTopScorer, setFinalTopScorer] = useState("");
   const [topScorerGoalsPlayer, setTopScorerGoalsPlayer] = useState("");
@@ -287,23 +307,34 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Live sync intelligente:
-  // - prima sincronizzazione all'apertura della lega
+  const hasLiveMatches = Object.values(realResults || {}).some((result) => result && !result.finished);
+
+  // Smart Live API Sync:
   // - se ci sono partite LIVE: sincronizza ogni 10 minuti
-  // - se non ci sono partite LIVE: sincronizza ogni 2 ore
-  // Tutti gli utenti leggono da Supabase: la richiesta API viene fatta solo dalla Edge Function.
+  // - se non ci sono partite LIVE: sincronizza ogni 1 ora
+  // - i dati vengono salvati/letti da Supabase, così l'app resta leggera e non consuma chiamate inutili.
   useEffect(() => {
     if (!user) return;
-    syncLiveResults(true);
+    const refreshMs = hasLiveMatches ? LIVE_REFRESH_MS : IDLE_REFRESH_MS;
+    setLiveSyncMode(hasLiveMatches ? "live" : "idle");
+    setNextLiveSyncAt(getNextSyncDate(refreshMs));
+    syncLiveResults(true, hasLiveMatches);
   }, [user, selectedLeague?.id]);
 
   useEffect(() => {
     if (!user) return;
-    const hasLiveMatches = Object.values(realResults || {}).some((result) => result && !result.finished);
-    const refreshMs = hasLiveMatches ? 10 * 60 * 1000 : 2 * 60 * 60 * 1000;
-    const timer = setInterval(() => syncLiveResults(true), refreshMs);
+
+    const refreshMs = hasLiveMatches ? LIVE_REFRESH_MS : IDLE_REFRESH_MS;
+    setLiveSyncMode(hasLiveMatches ? "live" : "idle");
+    setNextLiveSyncAt(getNextSyncDate(refreshMs));
+
+    const timer = setInterval(() => {
+      syncLiveResults(true, hasLiveMatches);
+      setNextLiveSyncAt(getNextSyncDate(refreshMs));
+    }, refreshMs);
+
     return () => clearInterval(timer);
-  }, [user, selectedLeague?.id, Object.values(realResults || {}).some((result) => result && !result.finished)]);
+  }, [user, selectedLeague?.id, hasLiveMatches]);
 
   async function loadPlayers() {
     setPlayersLoading(true);
@@ -327,10 +358,54 @@ function App() {
     setPlayersLoading(false);
   }
 
+  function getRoundStartDate(roundName) {
+    const allRoundMatches = buildKnockoutMatches().filter((m) => m.round === roundName && m.kickoff);
+    const dates = allRoundMatches
+      .map((m) => new Date(m.kickoff))
+      .filter((date) => !Number.isNaN(date.getTime()))
+      .sort((a, b) => a - b);
+    return dates[0] || null;
+  }
+
+  function getPredictionLockDate(match) {
+    if (leagueSettings.prediction_lock_mode === "tournament") return getTournamentStartDate();
+    if (leagueSettings.prediction_lock_mode === "stage") {
+      if (String(match?.id || "").startsWith("ko-")) return getRoundStartDate(match.round) || (match?.kickoff ? new Date(match.kickoff) : null);
+      return getTournamentStartDate();
+    }
+    return match?.kickoff ? new Date(match.kickoff) : null;
+  }
+
+  
+function formatLockDate(dateValue) {
+  if (!dateValue) return "";
+
+  const date = new Date(dateValue);
+
+  return date.toLocaleString("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getPredictionLockText(match) {
+    const date = getPredictionLockDate(match);
+    const label = formatLockDate(date);
+    if (leagueSettings.prediction_lock_mode === "tournament") return `Compilabile fino alla prima partita del torneo: ${label}`;
+    if (leagueSettings.prediction_lock_mode === "stage") {
+      if (String(match?.id || "").startsWith("ko-")) return `Compilabile fino alla prima partita del turno ${trRoundName(match.round)}: ${label}`;
+      return `Compilabile fino alla prima partita del torneo: ${label}`;
+    }
+    return `Compilabile fino al calcio d’inizio della partita: ${label}`;
+  }
+
   function isPredictionLocked(match) {
-    if (leagueSettings.prediction_lock_mode === "tournament") return isTournamentStarted();
-    if (!match.kickoff) return false;
-    return new Date() >= new Date(match.kickoff);
+    const lockDate = getPredictionLockDate(match);
+    if (!lockDate) return false;
+    return new Date() >= new Date(lockDate);
   }
 
   function getTournamentStartDate() {
@@ -933,22 +1008,33 @@ function App() {
     if (!error) setAllBonusPredictions(data || []);
   }
 
-  async function syncLiveResults(silent = false) {
+  async function syncLiveResults(silent = false, liveMode = hasLiveMatches) {
     try {
       setLiveSyncStatus(silent ? "" : "Sincronizzazione live in corso...");
+      const refreshMs = liveMode ? LIVE_REFRESH_MS : IDLE_REFRESH_MS;
+      setLiveSyncMode(liveMode ? "live" : "idle");
+      setNextLiveSyncAt(getNextSyncDate(refreshMs));
       const { data, error } = await supabase.functions.invoke("sync-live-results", {
-        body: { league_id: selectedLeague?.id || null }
+        body: {
+          league_id: selectedLeague?.id || null,
+          mode: liveMode ? "live" : "idle",
+          interval_minutes: liveMode ? 10 : 60,
+          has_live_matches: Boolean(liveMode),
+        }
       });
       if (error) throw error;
       await loadRealResults(true);
+      await loadMatchEvents(true);
       const updated = data?.updated ?? 0;
       const skipped = data?.skipped ?? 0;
-      setLiveSyncStatus(`Live sync OK: ${updated} aggiornati${skipped ? `, ${skipped} non mappati` : ""}`);
+      setLiveSyncStatus(`Sync ${liveMode ? "LIVE" : "1H"} OK: ${updated} aggiornati${skipped ? `, ${skipped} non mappati` : ""}`);
       if (!silent) setMessage("Risultati live sincronizzati ✅");
     } catch (error) {
       // Fallback: se Edge Function/API non è configurata, non blocchiamo l'app.
       await loadRealResults(true);
+      await loadMatchEvents(true);
       setLiveSyncStatus("Live API non configurata: uso risultati Admin/Supabase");
+      setNextLiveSyncAt(getNextSyncDate(liveMode ? LIVE_REFRESH_MS : IDLE_REFRESH_MS));
       if (!silent) setMessage(error?.message || "Live API non configurata");
     }
   }
@@ -965,6 +1051,30 @@ function App() {
     setLastLiveSync(new Date());
   }
 
+  async function loadMatchEvents(silent = false) {
+    const { data, error } = await supabase
+      .from("match_events")
+      .select("*")
+      .order("elapsed", { ascending: true })
+      .order("event_key", { ascending: true });
+
+    if (error) {
+      // Se la tabella non è ancora stata creata, l'app resta funzionante.
+      if (!silent && !String(error.message || "").includes("match_events")) {
+        setMessage(error.message);
+      }
+      setMatchEvents({});
+      return;
+    }
+
+    const formatted = {};
+    data?.forEach((event) => {
+      if (!formatted[event.match_id]) formatted[event.match_id] = [];
+      formatted[event.match_id].push(event);
+    });
+    setMatchEvents(formatted);
+  }
+
   async function saveRealResult(matchId, home, away, finished = true) {
     if (home === "" || away === "") { setMessage(t.enterRealResult); return; }
     const homeScore = Number(home);
@@ -976,6 +1086,7 @@ function App() {
     const { error } = await supabase.from("real_results").upsert({ match_id: matchId, home_score: homeScore, away_score: awayScore, finished });
     if (error) { setMessage(error.message); return; }
     await loadRealResults();
+    await loadMatchEvents(true);
     if (selectedLeague?.id) {
       await loadAllPredictions(selectedLeague.id);
       await loadAllBonusPredictions(selectedLeague.id);
@@ -986,6 +1097,7 @@ function App() {
 
   async function recalculateLeagueData() {
     await loadRealResults();
+    await loadMatchEvents(true);
     if (selectedLeague?.id) {
       await loadAllPredictions(selectedLeague.id);
       await loadAllBonusPredictions(selectedLeague.id);
@@ -1315,10 +1427,11 @@ function App() {
     const countdownParts = getCountdownParts(countdownTargetDate);
     const menuItems = [
       { key: "home", icon: "🏠", label: t.leagueHome || "Home Lega" },
+      { key: "live", icon: "🔴", label: "Live Match Center" },
       { key: "partite", icon: "📊", label: t.groupPredictions },
       { key: "eliminazione", icon: "🌍", label: t.knockoutPredictions },
-      { key: "passaggio-turno", icon: "🎯", label: "Passaggio Turno" },
-      { key: "piazzamento-gironi", icon: "📈", label: "Piazzamento Gironi" },
+      { key: "passaggio-turno", icon: "🎯", label: t.qualificationStage || "Passaggio turno" },
+      { key: "piazzamento-gironi", icon: "📈", label: t.groupPlacement || "Piazzamento gironi" },
       { key: "capocannoniere", icon: "🏆", label: t.topScorer },
       { key: "utenti", icon: "👥", label: t.usersPredictions },
       { key: "classifica", icon: "🥇", label: t.participantsRanking },
@@ -1345,111 +1458,60 @@ function App() {
     };
 
     return (
-      <div className="page league-page">
-      {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)}></div>}
-      <aside className={`side-menu ${menuOpen ? "open" : ""}`}>
-        <div className="side-menu-head">
-          <img src={logo} alt="logo" />
-          <div><strong>{selectedLeague.name}</strong><small>{t.leagueCode}: {selectedLeague.code}</small></div>
-          <button type="button" onClick={() => setMenuOpen(false)} aria-label="Chiudi menu">✕</button>
-        </div>
-        <div className="side-menu-list">
-          {menuItems.map((item) => (
-            <button key={item.key} className={activeTab === item.key ? "active" : ""} onClick={() => { setActiveTab(item.key); setMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
-              <span>{item.icon}</span>{item.label}
-            </button>
-          ))}
-        </div>
-      </aside>
-      <div className="card wide-card league-card">
-        <div className="league-sticky-header">
-          <div className="league-header-main">
-            <button onClick={() => setSelectedLeague(null)} className="icon-header-btn back-icon" title={t.backToDashboard}>←</button>
-            <img src={logo} alt="logo" className="mini-logo" />
-            <div className="league-header-title">
-              <h1>{selectedLeague.name}</h1>
-              <small>{t.leagueCode}: {selectedLeague.code}</small>
-            </div>
-            {showQuickActions && <div className="quick-actions">
-              <button type="button" className="quick-icon danger" onClick={quickClear} title="Cancella">🗑️</button>
-              <button type="button" className="quick-icon save" onClick={quickSave} title="Salva">💾</button>
-            </div>}
-          </div>
-          <div className="league-header-sub">
-            <button type="button" className="menu-trigger" onClick={() => setMenuOpen(true)}>☰</button>
-            <div className="active-section-title"><span>{activeMenuItem.icon}</span>{activeMenuItem.label}</div>
-          </div>
-        </div>
+      <LeagueShell
+        logo={logo}
+        selectedLeague={selectedLeague}
+        t={t}
+        menuOpen={menuOpen}
+        setMenuOpen={setMenuOpen}
+        menuItems={menuItems}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        activeMenuItem={activeMenuItem}
+        showQuickActions={showQuickActions}
+        quickClear={quickClear}
+        quickSave={quickSave}
+        onBack={() => setSelectedLeague(null)}
+      >
 
-        <div className="league-content">
+        {activeTab === "home" && <LeagueHome
+          t={t}
+          lastLiveSync={lastLiveSync}
+          liveSyncStatus={liveSyncStatus}
+          ranking={ranking}
+          leaderRE={leaderRE}
+          leaderPT={leaderPT}
+          leaderPG={leaderPG}
+          getCurrentTopScorer={getCurrentTopScorer}
+          liveMatchesHome={liveMatchesHome}
+          nextMatchesHome={nextMatchesHome}
+          trTeamLabel={trTeamLabel}
+          renderRealResult={renderRealResult}
+          formatMatchDateTime={formatMatchDateTime}
+          countdownTargetDate={countdownTargetDate}
+          countdownTargetMatch={countdownTargetMatch}
+          tournamentStartDate={tournamentStartDate}
+          countdownParts={countdownParts}
+          renderCountdownBox={renderCountdownBox}
+          leagueSettings={leagueSettings}
+        />}
 
-        {activeTab === "home" && <>
-          <h2>🏠 {t.leagueHome || "Home Lega"}</h2>
-          {lastLiveSync && <p className="live-sync-info">🔄 {t.lastUpdate || "Ultimo aggiornamento"}: {lastLiveSync.toLocaleTimeString()} {liveSyncStatus ? `— ${liveSyncStatus}` : ""}</p>}
-
-          {ranking.length > 0 && <div className="home-hero-grid">
-            <div className="home-panel podium-panel">
-              <h3>🏆 {t.participantsRanking}</h3>
-              <div className="podium-ranking compact-podium">
-                {ranking.slice(0, 3).map((row, index) => (
-                  <div key={row.name} className={`podium-card podium-${index + 1}`}>
-                    <div className="podium-medal">{index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}</div>
-                    <strong>{row.name}</strong>
-                    <span>{row.total} pt</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="home-panel">
-              <h3>⚡ Leader</h3>
-              <p><strong>RE:</strong> {leaderRE?.name || "-"} {leaderRE ? `(${leaderRE.exact})` : ""}</p>
-              <p><strong>PT:</strong> {leaderPT?.name || "-"} {leaderPT ? `(${leaderPT.qualificationBonus})` : ""}</p>
-              <p><strong>PG:</strong> {leaderPG?.name || "-"} {leaderPG ? `(${leaderPG.groupBonus})` : ""}</p>
-              <p><strong>CC:</strong> {getCurrentTopScorer() || "-"}</p>
-            </div>
-          </div>}
-
-          <div className="home-hero-grid">
-            <div className="home-panel">
-              <h3>🔴 LIVE</h3>
-              {liveMatchesHome.length === 0 ? <p>{t.noLiveMatches || "Nessuna partita live"}</p> : liveMatchesHome.map((m) => (
-                <div key={m.id} className="home-match-card live-card">
-                  <strong>{trTeamLabel(m.home)} - {trTeamLabel(m.away)}</strong>
-                  {renderRealResult(m.id)}
-                </div>
-              ))}
-            </div>
-            <div className="home-panel">
-              <h3>⏳ {t.nextMatches || "Prossime partite"}</h3>
-              {nextMatchesHome.length === 0 ? <p>{t.toBeDefined}</p> : nextMatchesHome.map((m) => (
-                <div key={m.id} className="home-match-card">
-                  <strong>{trTeamLabel(m.home)} - {trTeamLabel(m.away)}</strong>
-                  <small>📅 {formatMatchDateTime(m)}</small>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {countdownTargetDate && <div className="home-panel countdown-panel">
-            <h3>⏳ {leagueSettings.prediction_lock_mode === "tournament" ? "Chiusura pronostici torneo" : "Prossima chiusura pronostico"}</h3>
-            {leagueSettings.prediction_lock_mode === "tournament" ? (
-              <p>Prima partita del torneo</p>
-            ) : (
-              <p>{countdownTargetMatch ? `${trTeamLabel(countdownTargetMatch.home)} - ${trTeamLabel(countdownTargetMatch.away)}` : "Prossima partita"}</p>
-            )}
-            <strong>{leagueSettings.prediction_lock_mode === "tournament" ? tournamentStartDate?.toLocaleString() : countdownTargetMatch ? formatMatchDateTime(countdownTargetMatch) : "-"}</strong>
-            {renderCountdownBox(countdownParts)}
-          </div>}
-
-          <div className="home-panel quick-rules-panel">
-            <h3>📜 {t.rules}</h3>
-            <p><strong>RE</strong> = {t.exactScore}; <strong>SC</strong> = {t.correctOutcome}; <strong>PT</strong> = {t.qualificationBonus || "Passaggio Turno"}; <strong>PG</strong> = {t.groupPlacementBonus || "Piazzamento Gironi"}; <strong>CC</strong> = {t.topScorer}.</p>
-            <p>{leagueSettings.prediction_lock_mode === "tournament"
-              ? "I pronostici match si bloccano all’inizio della prima partita del torneo."
-              : "I pronostici match si bloccano al calcio d’inizio della relativa partita."}</p>
-          </div>
-        </>}
+        {activeTab === "live" && (
+          <LiveCenter
+            t={t}
+            matches={allDisplayMatches}
+            realResults={realResults}
+            matchEvents={matchEvents}
+            lastLiveSync={lastLiveSync}
+            liveSyncStatus={liveSyncStatus}
+            liveSyncMode={liveSyncMode}
+            nextLiveSyncAt={nextLiveSyncAt}
+            formatMatchDateTime={formatMatchDateTime}
+            trTeamLabel={trTeamLabel}
+            groups={groups}
+            getGroupStandings={getGroupStandings}
+          />
+        )}
 
         {activeTab === "regole" && <>
           <h2>{t.rulesTitle}</h2>
@@ -1509,9 +1571,11 @@ function App() {
             </div>
             <label>Modalità compilazione pronostici partite</label>
             <select value={leagueSettings.prediction_lock_mode || "match"} onChange={(e) => setLeagueSettings({ ...leagueSettings, prediction_lock_mode: e.target.value })}>
-              <option value="match">Una per una: ogni partita si blocca al proprio calcio d’inizio</option>
-              <option value="tournament">Tutte prima: tutte le partite si bloccano all’inizio del torneo</option>
+              <option value="match">Partita per partita: ogni pronostico si blocca al calcio d’inizio della relativa partita</option>
+              <option value="stage">Per fase/turno: gironi prima della prima partita del torneo; eliminazione prima del primo match del relativo turno</option>
+              <option value="tournament">Tutte prima: tutti i pronostici si bloccano all’inizio del torneo</option>
             </select>
+            <p className="bonus-help">Nota: nella fase a eliminazione il pronostico è legato allo slot della partita, non al nome provvisorio della squadra. Se le squadre vengono definite dopo, il risultato resta valido per quella partita.</p>
             <label>Modalità risultato esatto</label>
             <select value={leagueSettings.exact_score_mode || "standard"} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_score_mode: e.target.value })}>
               <option value="standard">Standard: tutti i risultati esatti uguali</option>
@@ -1546,112 +1610,58 @@ function App() {
           <button className="btn green" onClick={saveLeagueSettings}>{t.saveLeagueSettings}</button>
         </>}
 
-        {activeTab === "partite" && <>
-          <h2>{t.groupStagePredictions}</h2>
-          {[...matches].sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff)).map((match) => {
-            const locked = isPredictionLocked(match);
-            return <div key={match.id} className={`match-box ${locked ? "locked" : ""}`}>
-              <p>📅 {formatMatchDateTime(match)}</p><strong>{trTeamLabel(match.home)} - {trTeamLabel(match.away)}</strong>
-              {locked && <p>{t.predictionLocked} 🔒</p>}
-              {renderRealResult(match.id)}
-              {renderResultStatus(match.id)}
-              <div className="score-row">
-                <input disabled={locked} type="number" min="0" max="20" placeholder={trTeamLabel(match.home)} value={predictions[match.id]?.home_score ?? ""} onChange={(e) => updatePrediction(match.id, "home_score", e.target.value)} />
-                <input disabled={locked} type="number" min="0" max="20" placeholder={trTeamLabel(match.away)} value={predictions[match.id]?.away_score ?? ""} onChange={(e) => updatePrediction(match.id, "away_score", e.target.value)} />
-              </div>
-            </div>;
-          })}
-          <button onClick={saveAllPredictions} className="btn green legacy-action">{t.saveAllPredictions}</button>
-          <button onClick={() => clearMatchPredictions(matches)} className="btn danger legacy-action">🗑 Cancella Tutto</button>
-        </>}
+        {activeTab === "partite" && <GroupPredictions
+          t={t}
+          matches={matches}
+          predictions={predictions}
+          isPredictionLocked={isPredictionLocked}
+          formatMatchDateTime={formatMatchDateTime}
+          trTeamLabel={trTeamLabel}
+          getPredictionLockText={getPredictionLockText}
+          renderRealResult={renderRealResult}
+          renderResultStatus={renderResultStatus}
+          updatePrediction={updatePrediction}
+          saveAllPredictions={saveAllPredictions}
+          clearMatchPredictions={clearMatchPredictions}
+        />}
 
-        {activeTab === "utenti" && <>
-          <h2>{t.usersPredictions}</h2>
-          <div className="subtabs">
-            <button className={usersSubTab === "match" ? "active" : ""} onClick={() => setUsersSubTab("match")}>Pronostici Match</button>
-            <button className={usersSubTab === "pt" ? "active" : ""} onClick={() => setUsersSubTab("pt")}>Pronostici PT Utenti</button>
-            <button className={usersSubTab === "pg" ? "active" : ""} onClick={() => setUsersSubTab("pg")}>Pronostici PG Utenti</button>
-          </div>
-          <div className="user-filter-box">
-            <label>Visualizza utente</label>
-            <select value={selectedPredictionUser} onChange={(e) => setSelectedPredictionUser(e.target.value)}>
-              <option value="__all__">Tutti gli utenti</option>
-              {users.map((name) => <option key={name} value={name}>{name}</option>)}
-            </select>
-          </div>
-          {usersSubTab === "match" && <><div className="grid-scroll"><table className="predictions-grid">
-            <thead><tr><th className="sticky-col sticky-head">{t.match}</th><th className="sticky-head">{t.realResult}</th>{filteredUsers.map((name) => <th key={name} className="sticky-head"><div>{name}</div><small>{t.predictedTopScorer}</small></th>)}</tr></thead>
-            <tbody>
-              <tr>
-                <td className="sticky-col"><strong>🏆 {t.topScorer}</strong></td>
-                <td style={{ textAlign: "center", fontWeight: "bold", color: confirmedTopScorer ? "#18c964" : "#58a6ff" }}>
-                  <div>{getCurrentTopScorer() || "-"}</div>
-                  {getCurrentTopScorer() && <small>{confirmedTopScorer ? `✅ ${t.finalTopScorer}` : `🔵 ${t.provisionalTopScorer}`}</small>}
-                </td>
-                {filteredUsers.map((name) => <td key={name} style={{ textAlign: "center", fontWeight: "bold" }}>{topScorerPredictions[name] || "-"}</td>)}
-              </tr>
-              {[...matches, ...knockoutMatches].map((match) => <tr key={match.id}>
-              <td className="sticky-col">
-                <div>{trTeamLabel(match.home)} - {trTeamLabel(match.away)}</div>
-                <small style={{ display: "block", color: "#9fb1c8", marginTop: 4 }}>📅 {formatMatchDateTime(match)}</small>
-              </td>
-              {renderUsersRealResultCell(match.id)}
-              {filteredUsers.map((name) => {
-                const prediction = uniquePredictions().find((p) => p.match_id === match.id && p.username === name);
-                const real = realResults[match.id];
-                const points = prediction && real?.finished ? calculatePoints(prediction, real) : null;
-                return <td key={name} style={{ background: getPredictionColor(prediction, real), fontWeight: "bold", textAlign: "center" }}>
-                  <div>{prediction ? `${prediction.home_score}-${prediction.away_score}` : "-"}</div>
-                  {real && <small style={{ display: "block", marginTop: 4 }}>{real.finished && points !== null ? `${t.points}: ${points}` : `🔵 ${t.live}`}</small>}
-                </td>;
-              })}
-            </tr>)}
-            </tbody>
-          </table></div>
-          <div className="league-box"><p>🟩 {t.exactLegend}</p><p>🟨 {t.outcomeLegend}</p></div></>}
-          {usersSubTab === "pt" && leagueSettings.enable_qualification_bonus && <div className="league-box"><h3>✅ Pronostici PT Utenti</h3><div className="grid-scroll"><table className="predictions-grid"><thead><tr><th className="sticky-col sticky-head">Utente</th>{qualificationRounds.map((r) => <th className="sticky-head" key={r.key}>{r.label}</th>)}<th className="sticky-head">Vincente</th></tr></thead><tbody>{filteredUsers.map((name) => { const map = getBonusPredictionMapForUser(name); return <tr key={name}><td className="sticky-col">{name}</td>{qualificationRounds.map((r) => <td key={r.key}>{(map[`qualification::${r.key}`] || []).map((team) => <div key={team} className="mini-chip" style={{ background: getBonusCellColor("qualification", r.key, team) }}>{team}</div>)}</td>)}<td><div className="mini-chip" style={{ background: getBonusCellColor("qualification", "champion", map[`qualification::champion`]) }}>{map[`qualification::champion`] || "-"}</div></td></tr>; })}</tbody></table></div></div>}
-          {usersSubTab === "pg" && leagueSettings.enable_group_positions_bonus && <div className="league-box"><h3>📊 Pronostici PG Utenti</h3><div className="grid-scroll"><table className="predictions-grid"><thead><tr><th className="sticky-col sticky-head">Utente</th>{groups.map((g) => <th className="sticky-head" key={g.name}>{trGroupName(g.name)}</th>)}</tr></thead><tbody>{filteredUsers.map((name) => { const map = getBonusPredictionMapForUser(name); return <tr key={name}><td className="sticky-col">{name}</td>{groups.map((g) => <td key={g.name}>{(map[`group_position::${g.name}`] || []).map((team, idx) => <div key={`${team}-${idx}`} className="mini-chip" style={{ background: getBonusCellColor("group_position", g.name, team, idx) }}>{idx + 1}. {team}</div>)}</td>)}</tr>; })}</tbody></table></div></div>}
-        </>}
+        {activeTab === "utenti" && <UsersPredictions
+          t={t}
+          usersSubTab={usersSubTab}
+          setUsersSubTab={setUsersSubTab}
+          selectedPredictionUser={selectedPredictionUser}
+          setSelectedPredictionUser={setSelectedPredictionUser}
+          users={users}
+          filteredUsers={filteredUsers}
+          confirmedTopScorer={confirmedTopScorer}
+          getCurrentTopScorer={getCurrentTopScorer}
+          topScorerPredictions={topScorerPredictions}
+          matches={matches}
+          knockoutMatches={knockoutMatches}
+          trTeamLabel={trTeamLabel}
+          formatMatchDateTime={formatMatchDateTime}
+          renderUsersRealResultCell={renderUsersRealResultCell}
+          uniquePredictions={uniquePredictions}
+          realResults={realResults}
+          calculatePoints={calculatePoints}
+          getPredictionColor={getPredictionColor}
+          leagueSettings={leagueSettings}
+          qualificationRounds={qualificationRounds}
+          getBonusPredictionMapForUser={getBonusPredictionMapForUser}
+          getBonusCellColor={getBonusCellColor}
+          groups={groups}
+          trGroupName={trGroupName}
+        />}
 
-        {activeTab === "classifica" && <>
-          <h2>{t.participantsRanking}</h2>
-          {lastLiveSync && <p className="live-sync-info">🔄 {t.liveSyncActive || "Live sync"}: {lastLiveSync.toLocaleTimeString()} {liveSyncStatus ? `— ${liveSyncStatus}` : ""}</p>}
-          {ranking.length > 0 && <div className="podium-ranking">
-            {ranking.slice(0, 3).map((row, index) => (
-              <div key={row.name} className={`podium-card podium-${index + 1}`}>
-                <div className="podium-medal">{index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}</div>
-                <div className="podium-avatar"><AvatarBadge size="large" /></div>
-                <strong>{row.name}</strong>
-                <span>{row.total} pt</span>
-              </div>
-            ))}
-          </div>}
-          {ranking.length === 0 ? <p>{t.noPointsYet}</p> : <div className="table-wrapper"><table>
-            <thead><tr>
-              <th>{t.position}</th>
-              <th>{t.participant || t.user}</th>
-              <th>Tot</th>
-              <th>RE</th>
-              <th>SC</th>
-              <th>PT</th>
-              <th>PG</th>
-              <th>CC</th>
-            </tr></thead>
-            <tbody>{ranking.map((row, index) => (
-              <tr key={row.name} style={index === 0 ? { background: "rgba(245, 165, 36, 0.18)", fontWeight: "bold" } : {}}>
-                <td>{index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}</td>
-                <td>{row.name}</td>
-                <td><strong>{row.total}</strong></td>
-                <td>{row.exact}</td>
-                <td>{row.outcome}</td>
-                <td>{row.qualificationBonus}</td>
-                <td>{row.groupBonus}</td>
-                <td>{row.topScorerPoints}</td>
-              </tr>
-            ))}</tbody>
-          </table></div>}
-          <div className="league-box"><p><strong>Legenda:</strong> Tot = Punti Totali; RE = Risultati Esatti; SC = Segni Corretti; PT = Bonus Passaggio Turno; PG = Bonus Piazzamento Gironi; CC = Bonus Capocannoniere.</p></div>
-        </>}
+        {activeTab === "classifica" && (
+          <ParticipantsRanking
+            t={t}
+            lastLiveSync={lastLiveSync}
+            liveSyncStatus={liveSyncStatus}
+            ranking={ranking}
+            AvatarBadge={AvatarBadge}
+          />
+        )}
 
         {activeTab === "gironi" && <>
           <h2>{t.groupRanking}</h2>
@@ -1663,83 +1673,38 @@ function App() {
             </table></div></div>)}
         </>}
 
-        {activeTab === "tabellone" && <>
-          <h2>{t.finalBracket}</h2>
-          <div className="tournament-bracket">
-            {knockoutRounds.map((round) => (
-              <div key={round.round} className="tournament-round">
-                <div className="round-title">{trRoundName(round.round)}</div>
-                <div className="round-matches">
-                  {knockoutMatches.filter((m) => m.round === round.round).map((m) => {
-                    const real = realResults[m.id];
-                    const isFinal = real?.finished;
-                    return (
-                      <div key={m.id} className={`bracket-card ${isFinal ? "final-card" : ""}`}>
-                        <div className="bracket-card-head">
-                          <span>{m.code}</span>
-                          <small>📅 {formatMatchDateTime(m)}</small>
-                        </div>
-                        <div className="team-line">
-                          <span>{trTeamLabel(m.home)}</span>
-                          <strong>{real?.home_score ?? "-"}</strong>
-                        </div>
-                        <div className="team-line">
-                          <span>{trTeamLabel(m.away)}</span>
-                          <strong>{real?.away_score ?? "-"}</strong>
-                        </div>
-                        <div className="bracket-status">{renderRealResult(m.id, true)}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>}
+        {activeTab === "tabellone" && <FinalBracket
+          t={t}
+          knockoutRounds={knockoutRounds}
+          knockoutMatches={knockoutMatches}
+          realResults={realResults}
+          formatMatchDateTime={formatMatchDateTime}
+          trTeamLabel={trTeamLabel}
+          trRoundName={trRoundName}
+          renderRealResult={renderRealResult}
+        />}
 
-        {activeTab === "eliminazione" && <>
-          <h2>{t.knockoutStagePredictions}</h2>
-          <div className="league-box"><p>{t.knockoutInfo}</p></div>
-          <div className="tournament-bracket predictions-bracket">
-            {knockoutRounds.map((round) => (
-              <div key={round.round} className="tournament-round">
-                <div className="round-title">{trRoundName(round.round)}</div>
-                <div className="round-matches">
-                  {knockoutMatches.filter((match) => match.round === round.round).map((match) => {
-                    const locked = isPredictionLocked(match);
-                    return (
-                      <div key={match.id} className={`bracket-card prediction-card ${locked ? "locked" : ""}`}>
-                        <div className="bracket-card-head">
-                          <span>{match.code}</span>
-                          <small>📅 {formatMatchDateTime(match)}</small>
-                        </div>
-                        <div className="prediction-team-row">
-                          <span>{trTeamLabel(match.home)}</span>
-                          <input disabled={locked} type="number" min="0" max="20" value={predictions[match.id]?.home_score ?? ""} onChange={(e) => updatePrediction(match.id, "home_score", e.target.value)} />
-                        </div>
-                        <div className="prediction-team-row">
-                          <span>{trTeamLabel(match.away)}</span>
-                          <input disabled={locked} type="number" min="0" max="20" value={predictions[match.id]?.away_score ?? ""} onChange={(e) => updatePrediction(match.id, "away_score", e.target.value)} />
-                        </div>
-                        <div className="bracket-status">
-                          {renderRealResult(match.id)}
-                          {renderResultStatus(match.id)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-          <button onClick={() => saveAllPredictions(knockoutMatches)} className="btn green legacy-action">{t.saveKnockoutPredictions}</button>
-          <button onClick={() => clearMatchPredictions(knockoutMatches)} className="btn danger legacy-action">🗑 Cancella Tutto</button>
-        </>}
+        {activeTab === "eliminazione" && <KnockoutPredictions
+          t={t}
+          knockoutRounds={knockoutRounds}
+          knockoutMatches={knockoutMatches}
+          predictions={predictions}
+          isPredictionLocked={isPredictionLocked}
+          formatMatchDateTime={formatMatchDateTime}
+          trTeamLabel={trTeamLabel}
+          trRoundName={trRoundName}
+          getPredictionLockText={getPredictionLockText}
+          renderRealResult={renderRealResult}
+          renderResultStatus={renderResultStatus}
+          updatePrediction={updatePrediction}
+          saveAllPredictions={saveAllPredictions}
+          clearMatchPredictions={clearMatchPredictions}
+        />}
 
 
         {activeTab === "passaggio-turno" && <>
           <h2>Passaggio Turno</h2>
-          <div className="league-box">
+          <div className="league-box section-sticky-panel">
             <p style={{ color: isTournamentStarted() ? "#f5a524" : "#9fb1c8" }}>
               {isTournamentStarted() ? "🔒 Pronostici bloccati: il torneo è già iniziato" : `Compilabile fino al calcio d’inizio della prima partita: ${formatTournamentStart()}`}
             </p>
@@ -1774,7 +1739,7 @@ function App() {
 
         {activeTab === "piazzamento-gironi" && <>
           <h2>Piazzamento Gironi</h2>
-          <div className="league-box">
+          <div className="league-box section-sticky-panel">
             <p style={{ color: isTournamentStarted() ? "#f5a524" : "#9fb1c8" }}>
               {isTournamentStarted() ? "🔒 Pronostici bloccati: il torneo è già iniziato" : `Compilabile fino al calcio d’inizio della prima partita: ${formatTournamentStart()}`}
             </p>
@@ -1822,84 +1787,35 @@ function App() {
           {renderTopScorerRankingBox()}
         </>}
 
-        {activeTab === "admin" && isAdmin && <>
-          <h2>🛠️ Admin Panel</h2>
-          <div className="admin-dashboard-grid">
-            <div className="admin-stat-card"><span>🔴 LIVE</span><strong>{allDisplayMatches.filter((m) => realResults[m.id] && !realResults[m.id]?.finished).length}</strong></div>
-            <div className="admin-stat-card"><span>✅ FINAL</span><strong>{allDisplayMatches.filter((m) => realResults[m.id]?.finished).length}</strong></div>
-            <div className="admin-stat-card"><span>🟡 DA INSERIRE</span><strong>{allDisplayMatches.filter((m) => !realResults[m.id]).length}</strong></div>
-            <div className="admin-stat-card"><span>🏆 UTENTI</span><strong>{users.length}</strong></div>
-          </div>
-
-          <div className="admin-toolbar league-box">
-            <div>
-              <label>Filtro partite</label>
-              <select value={adminMatchFilter} onChange={(e) => setAdminMatchFilter(e.target.value)}>
-                <option value="all">Tutte</option>
-                <option value="pending">Da inserire</option>
-                <option value="live">Live</option>
-                <option value="final">Finali</option>
-              </select>
-            </div>
-            <button className="btn blue" onClick={() => syncLiveResults(false)}>🌐 Sincronizza risultati live ora</button>
-          <button className="btn blue" onClick={recalculateLeagueData}>🔄 Ricalcola classifica</button>
-          </div>
-
-          <div className="admin-section-title">
-            <h3>{t.insertRealResults}</h3>
-            <p className="bonus-help">I risultati LIVE aggiornano subito classifica partecipanti, classifica gironi e tabellone. I risultati FINAL rendono i punti definitivi.</p>
-          </div>
-
-          <div className="admin-match-grid">
-            {adminDisplayMatches.map((match) => {
-              const result = realResults[match.id];
-              const statusClass = result?.finished ? "admin-final" : result ? "admin-live" : "admin-pending";
-              const statusLabel = result?.finished ? "✅ FINAL" : result ? "🔴 LIVE" : "🟡 PENDING";
-              return (
-                <div key={match.id} className={`match-box admin-match-card ${statusClass}`}>
-                  <div className="admin-match-head">
-                    <span>{statusLabel}</span>
-                    <small>📅 {formatMatchDateTime(match)}</small>
-                  </div>
-                  <strong>{trTeamLabel(match.home)} - {trTeamLabel(match.away)}</strong>
-                  {renderRealResult(match.id)}
-                  <div className="score-row">
-                    <input id={`rh-${match.id}`} type="number" min="0" max="20" placeholder={t.home} defaultValue={result?.home_score ?? ""} />
-                    <input id={`ra-${match.id}`} type="number" min="0" max="20" placeholder={t.away} defaultValue={result?.away_score ?? ""} />
-                  </div>
-                  <div className="admin-actions-row">
-                    <button className="btn blue" onClick={() => saveRealResult(match.id, document.getElementById(`rh-${match.id}`).value, document.getElementById(`ra-${match.id}`).value, false)}>{t.saveLiveResult}</button>
-                    <button className="btn green" onClick={() => saveRealResult(match.id, document.getElementById(`rh-${match.id}`).value, document.getElementById(`ra-${match.id}`).value, true)}>{t.confirmFinalResult}</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="admin-two-columns">
-            <div className="league-box">
-              <h3>🔴 {t.topScorerRanking}</h3>
-              <p className="bonus-help">Aggiorna i gol provvisori dei capocannonieri durante il torneo.</p>
-              <select value={topScorerGoalsPlayer} onChange={(e) => setTopScorerGoalsPlayer(e.target.value)}>
-                <option value="">{t.selectPlayer}</option>{selectableTopScorers.map((player) => <option key={player} value={player}>{player}</option>)}
-              </select>
-              <input type="number" min="0" max="30" placeholder={t.goals} value={topScorerGoals} onChange={(e) => setTopScorerGoals(e.target.value)} />
-              <button className="btn blue" onClick={saveTopScorerGoals}>{t.saveTopScorerGoals}</button>
-            </div>
-            <div className="league-box">
-              <h3>{t.finalTopScorer}</h3>
-              <p>{t.confirmed}: {confirmedTopScorer || "-"}</p>
-              <select value={finalTopScorer} onChange={(e) => setFinalTopScorer(e.target.value)}>
-                <option value="">{t.selectPlayer}</option>{selectableTopScorers.map((player) => <option key={player} value={player}>{player}</option>)}
-              </select>
-              <button className="btn green" onClick={saveFinalTopScorer}>{t.confirmFinalResult}</button>
-            </div>
-          </div>
-        </>}
+        {activeTab === "admin" && isAdmin && (
+          <AdminPanel
+            t={t}
+            users={users}
+            allDisplayMatches={allDisplayMatches}
+            realResults={realResults}
+            adminMatchFilter={adminMatchFilter}
+            setAdminMatchFilter={setAdminMatchFilter}
+            syncLiveResults={syncLiveResults}
+            recalculateLeagueData={recalculateLeagueData}
+            formatMatchDateTime={formatMatchDateTime}
+            trTeamLabel={trTeamLabel}
+            renderRealResult={renderRealResult}
+            saveRealResult={saveRealResult}
+            selectableTopScorers={selectableTopScorers}
+            topScorerGoalsPlayer={topScorerGoalsPlayer}
+            setTopScorerGoalsPlayer={setTopScorerGoalsPlayer}
+            topScorerGoals={topScorerGoals}
+            setTopScorerGoals={setTopScorerGoals}
+            saveTopScorerGoals={saveTopScorerGoals}
+            confirmedTopScorer={confirmedTopScorer}
+            finalTopScorer={finalTopScorer}
+            setFinalTopScorer={setFinalTopScorer}
+            saveFinalTopScorer={saveFinalTopScorer}
+          />
+        )}
 
         <p>{message}</p>
-        </div>
-      </div></div>
+      </LeagueShell>
     );
   }
 

@@ -958,3 +958,487 @@ select {
     width: 98px;
   }
 }
+
+/* v21 - Header compatto + menu laterale */
+.league-page {
+  align-items: flex-start;
+  padding-top: 42px;
+}
+.league-card {
+  position: relative;
+  overflow: visible;
+  padding-top: 0;
+}
+.league-content {
+  padding-top: 18px;
+}
+.league-sticky-header {
+  position: sticky;
+  top: 10px;
+  z-index: 5000;
+  margin: -8px -8px 18px;
+  padding: 10px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(5,13,27,.92), rgba(17,33,59,.88));
+  border: 1px solid rgba(140,190,255,.22);
+  box-shadow: 0 18px 45px rgba(0,0,0,.35), 0 0 28px rgba(23,129,255,.14);
+  backdrop-filter: blur(18px);
+}
+.league-header-main,
+.league-header-sub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.league-header-main {
+  min-height: 54px;
+}
+.league-header-sub {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.mini-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 0 18px rgba(0,200,255,.28);
+  flex: 0 0 auto;
+}
+.league-header-title {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.league-header-title h1 {
+  margin: 0;
+  font-size: clamp(18px, 3vw, 28px);
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 0 15px rgba(25,200,255,.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.league-header-title small {
+  display: block;
+  margin-top: 5px;
+  color: #b9c9df;
+  font-weight: 700;
+}
+.icon-header-btn,
+.menu-trigger,
+.quick-icon {
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(17,30,52,.9);
+  color: #fff;
+  border-radius: 12px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: .18s ease;
+}
+.icon-header-btn:hover,
+.menu-trigger:hover,
+.quick-icon:hover {
+  transform: translateY(-1px) scale(1.04);
+  filter: brightness(1.08);
+}
+.icon-header-btn {
+  width: 38px;
+  height: 38px;
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+.menu-trigger {
+  width: 42px;
+  height: 42px;
+  font-size: 25px;
+  flex: 0 0 auto;
+}
+.active-section-title {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.08);
+  color: #fff;
+  font-weight: 900;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.active-section-title span { margin-right: 8px; }
+.quick-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+.quick-icon {
+  width: 42px;
+  height: 42px;
+  font-size: 20px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.25);
+}
+.quick-icon.danger { background: linear-gradient(135deg, #ee3b3b, #a81919); }
+.quick-icon.save { background: linear-gradient(135deg, #20cf68, #078a43); }
+.legacy-action { display: none !important; }
+
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  background: rgba(0,0,0,.52);
+  backdrop-filter: blur(3px);
+}
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(360px, 88vw);
+  z-index: 9000;
+  transform: translateX(-105%);
+  transition: transform .22s ease;
+  background: linear-gradient(180deg, rgba(4,12,26,.98), rgba(9,22,43,.98));
+  border-right: 1px solid rgba(125,190,255,.22);
+  box-shadow: 20px 0 60px rgba(0,0,0,.45);
+  padding: 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+.side-menu.open { transform: translateX(0); }
+.side-menu-head {
+  display: grid;
+  grid-template-columns: 48px 1fr 38px;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 14px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  color: #fff;
+}
+.side-menu-head img {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+.side-menu-head strong,
+.side-menu-head small {
+  display: block;
+  text-align: left;
+}
+.side-menu-head small { color: #9fb1c8; margin-top: 4px; }
+.side-menu-head button {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  cursor: pointer;
+}
+.side-menu-list {
+  display: grid;
+  gap: 9px;
+}
+.side-menu-list button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 15px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.06);
+  color: #dce8ff;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+}
+.side-menu-list button span {
+  width: 26px;
+  display: inline-grid;
+  place-items: center;
+}
+.side-menu-list button.active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(29,127,255,.9), rgba(24,201,100,.55));
+  border-color: rgba(255,255,255,.20);
+  box-shadow: 0 0 22px rgba(29,127,255,.24);
+}
+.side-menu-list button:hover {
+  background: rgba(255,255,255,.11);
+}
+
+@media (max-width: 760px) {
+  .league-page { padding: 8px; }
+  .league-card { border-radius: 20px; padding: 10px; max-width: 100vw; }
+  .league-sticky-header { top: 6px; margin: 0 0 14px; padding: 8px; border-radius: 18px; }
+  .league-header-main { min-height: 46px; gap: 7px; }
+  .mini-logo { width: 36px; height: 36px; }
+  .icon-header-btn { width: 34px; height: 34px; font-size: 18px; }
+  .quick-icon { width: 36px; height: 36px; font-size: 18px; }
+  .league-header-title h1 { font-size: 18px; }
+  .league-header-title small { font-size: 11px; }
+  .menu-trigger { width: 38px; height: 38px; font-size: 22px; }
+  .active-section-title { padding: 10px 12px; font-size: 14px; }
+}
+
+@media (max-width: 430px) {
+  .league-header-title h1 { max-width: 130px; }
+  .quick-actions { gap: 6px; }
+  .quick-icon { width: 34px; height: 34px; }
+}
+
+
+/* V22 - Migliore leggibilità titoli e testi sezione */
+.league-content > h2,
+.league-content h2,
+.card h2,
+.wide-card h2 {
+  color: #ffffff !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  text-shadow: 0 0 12px rgba(42, 196, 255, 0.55), 0 2px 10px rgba(0,0,0,0.7);
+}
+
+.league-content > h2 {
+  margin: 16px 0 14px !important;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(29,127,255,0.18), rgba(24,201,100,0.08));
+  border: 1px solid rgba(130, 205, 255, 0.20);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 12px 28px rgba(0,0,0,.18);
+}
+
+.league-content h3,
+.league-box h3,
+.home-panel h3,
+.bonus-section h3,
+.admin-section-title h3,
+.round-title {
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: 0 0 8px rgba(42, 196, 255, 0.30), 0 2px 8px rgba(0,0,0,.55);
+}
+
+.league-content p,
+.league-box p,
+.home-panel p,
+.bonus-help,
+.bracket-status,
+.live-sync-info,
+.league-content small,
+.league-box small {
+  color: rgba(235, 246, 255, 0.88) !important;
+}
+
+.league-box,
+.home-panel,
+.match-box,
+.bracket-card,
+.bonus-section {
+  border-color: rgba(150, 215, 255, 0.14) !important;
+}
+
+.league-box strong,
+.home-panel strong,
+.match-box strong,
+.bracket-card strong {
+  color: #ffffff !important;
+}
+
+/* Label sezione più evidente */
+.active-section-title {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, rgba(255,255,255,.12), rgba(29,127,255,.14)) !important;
+  border-color: rgba(130,205,255,.22) !important;
+  text-shadow: 0 0 10px rgba(42,196,255,.28);
+}
+
+/* Messaggi di blocco e note: più leggibili */
+.league-content p[style],
+.league-box p[style] {
+  font-weight: 700;
+}
+
+/* Campi input/select più contrastati */
+.league-content input,
+.league-content select,
+.bonus-section select {
+  color: #ffffff !important;
+  background: rgba(24, 34, 53, 0.98) !important;
+  border: 1px solid rgba(145, 205, 255, 0.10) !important;
+}
+
+.league-content input::placeholder {
+  color: rgba(220, 235, 255, 0.70) !important;
+}
+
+/* Mobile: titoli leggibili ma compatti */
+@media (max-width: 760px) {
+  .league-content > h2 {
+    font-size: 22px !important;
+    padding: 12px 13px;
+    margin-top: 12px !important;
+  }
+  .league-content h3,
+  .league-box h3,
+  .home-panel h3,
+  .bonus-section h3 {
+    font-size: 18px !important;
+  }
+}
+
+/* v23 - Freeze corretto: header + titolo sezione opachi */
+.league-sticky-header {
+  top: 0 !important;
+  z-index: 7000 !important;
+  margin: -8px -8px 0 !important;
+  border-radius: 0 0 22px 22px !important;
+  background: #061426 !important;
+  background-image: linear-gradient(135deg, #061426 0%, #0b1d36 55%, #061426 100%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 18px 36px rgba(0,0,0,.55), 0 0 0 1px rgba(110,190,255,.18) !important;
+}
+
+.league-sticky-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -16px;
+  height: 16px;
+  background: linear-gradient(180deg, rgba(6,20,38,1), rgba(6,20,38,0));
+  pointer-events: none;
+}
+
+.league-content {
+  padding-top: 18px !important;
+}
+
+/* Il titolo della sezione resta fisso sotto l'header: lo scroll parte sotto di lui */
+.league-content > h2 {
+  position: sticky !important;
+  top: 126px !important;
+  z-index: 6500 !important;
+  margin: 0 0 14px !important;
+  padding: 13px 16px !important;
+  border-radius: 16px !important;
+  color: #ffffff !important;
+  background: #08213a !important;
+  background-image: linear-gradient(135deg, #0c3152 0%, #083045 55%, #06223b 100%) !important;
+  border: 1px solid rgba(130, 215, 255, 0.34) !important;
+  box-shadow: 0 14px 26px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.10) !important;
+  text-align: center !important;
+  text-shadow: 0 0 10px rgba(42,196,255,.38), 0 2px 8px rgba(0,0,0,.65) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.league-content > h2::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: -18px;
+  height: 18px;
+  background: #061426;
+  pointer-events: none;
+}
+
+.league-content > h2::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  bottom: -14px;
+  height: 14px;
+  background: linear-gradient(180deg, rgba(6,20,38,1), rgba(6,20,38,0));
+  pointer-events: none;
+}
+
+/* Evita che le righe delle partite si intravedano sotto le barre sticky */
+.league-card,
+.league-content {
+  background-clip: padding-box;
+}
+
+.match-box:first-of-type,
+.bonus-section:first-of-type,
+.league-box:first-of-type {
+  margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+  .league-sticky-header {
+    top: 0 !important;
+    padding: 8px !important;
+  }
+
+  .league-header-main {
+    min-height: 46px !important;
+  }
+
+  .league-header-sub {
+    margin-top: 6px !important;
+    padding-top: 6px !important;
+  }
+
+  .league-content > h2 {
+    top: 112px !important;
+    font-size: 19px !important;
+    padding: 11px 12px !important;
+  }
+}
+
+/* v24 - Titolo sezione sempre visibile sotto l'header */
+.league-sticky-header::after {
+  height: 8px !important;
+  bottom: -8px !important;
+  background: #061426 !important;
+}
+
+.league-content > h2 {
+  top: 142px !important;
+  z-index: 7200 !important;
+  margin-bottom: 22px !important;
+  background: #0b2c49 !important;
+  background-image: linear-gradient(135deg, #0d3a63 0%, #0b314e 55%, #082640 100%) !important;
+  border: 1px solid rgba(150, 225, 255, 0.52) !important;
+  box-shadow: 0 16px 30px rgba(0,0,0,.52), 0 0 0 9999px transparent, inset 0 1px 0 rgba(255,255,255,.14) !important;
+}
+
+.league-content > h2::before {
+  top: -22px !important;
+  height: 22px !important;
+  background: #061426 !important;
+}
+
+.league-content > h2::after {
+  bottom: -18px !important;
+  height: 18px !important;
+  background: #061426 !important;
+}
+
+.match-box:first-of-type,
+.bonus-section:first-of-type,
+.league-box:first-of-type {
+  margin-top: 24px !important;
+}
+
+@media (max-width: 760px) {
+  .league-content > h2 {
+    top: 124px !important;
+    z-index: 7200 !important;
+    margin-bottom: 20px !important;
+  }
+}

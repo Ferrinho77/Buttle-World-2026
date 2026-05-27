@@ -32,6 +32,7 @@ function App() {
   const [leagues, setLeagues] = useState([]);
   const [selectedLeague, setSelectedLeague] = useState(null);
   const [activeTab, setActiveTab] = useState("home");
+  const [menuOpen, setMenuOpen] = useState(false);
   const [usersSubTab, setUsersSubTab] = useState("match");
   const [showDashboardSettings, setShowDashboardSettings] = useState(false);
   const [editingLeagueId, setEditingLeagueId] = useState(null);
@@ -1312,32 +1313,75 @@ function App() {
     const countdownTargetMatch = leagueSettings.prediction_lock_mode === "tournament" ? null : nextMatch;
     const countdownTargetDate = leagueSettings.prediction_lock_mode === "tournament" ? tournamentStartDate : countdownTargetMatch?.kickoff;
     const countdownParts = getCountdownParts(countdownTargetDate);
+    const menuItems = [
+      { key: "home", icon: "🏠", label: t.leagueHome || "Home Lega" },
+      { key: "partite", icon: "📊", label: t.groupPredictions },
+      { key: "eliminazione", icon: "🌍", label: t.knockoutPredictions },
+      { key: "passaggio-turno", icon: "🎯", label: "Passaggio Turno" },
+      { key: "piazzamento-gironi", icon: "📈", label: "Piazzamento Gironi" },
+      { key: "capocannoniere", icon: "🏆", label: t.topScorer },
+      { key: "utenti", icon: "👥", label: t.usersPredictions },
+      { key: "classifica", icon: "🥇", label: t.participantsRanking },
+      { key: "gironi", icon: "📋", label: t.groupRanking },
+      { key: "tabellone", icon: "🧩", label: t.bracket },
+      { key: "settings", icon: "⚙️", label: t.settings },
+      ...(isAdmin ? [{ key: "admin", icon: "🛠️", label: t.admin }, { key: "league-settings", icon: "🎛️", label: t.leagueSettings }] : []),
+      { key: "regole", icon: "📜", label: t.rules },
+    ];
+    const activeMenuItem = menuItems.find((item) => item.key === activeTab) || menuItems[0];
+    const showQuickActions = ["partite", "eliminazione", "passaggio-turno", "piazzamento-gironi", "capocannoniere"].includes(activeTab);
+    const quickSave = () => {
+      if (activeTab === "partite") return saveAllPredictions(matches);
+      if (activeTab === "eliminazione") return saveAllPredictions(knockoutMatches);
+      if (activeTab === "passaggio-turno" || activeTab === "piazzamento-gironi") return saveBonusPredictions();
+      if (activeTab === "capocannoniere") return saveTopScorerPrediction();
+    };
+    const quickClear = () => {
+      if (activeTab === "partite") return clearMatchPredictions(matches);
+      if (activeTab === "eliminazione") return clearMatchPredictions(knockoutMatches);
+      if (activeTab === "passaggio-turno") return clearBonusSection("qualification");
+      if (activeTab === "piazzamento-gironi") return clearBonusSection("group_position");
+      if (activeTab === "capocannoniere") return clearTopScorerPredictionLocal();
+    };
 
     return (
-      <div className="page"><div className="card wide-card league-card">
-        <div className="league-top-actions">
-          <button onClick={() => setSelectedLeague(null)} className="back-dashboard-btn">⬅ {t.backToDashboard}</button>
+      <div className="page league-page">
+      {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)}></div>}
+      <aside className={`side-menu ${menuOpen ? "open" : ""}`}>
+        <div className="side-menu-head">
+          <img src={logo} alt="logo" />
+          <div><strong>{selectedLeague.name}</strong><small>{t.leagueCode}: {selectedLeague.code}</small></div>
+          <button type="button" onClick={() => setMenuOpen(false)} aria-label="Chiudi menu">✕</button>
         </div>
-        <img src={logo} alt="logo" className="logo" />
-        <h1 className="app-title league-title">{selectedLeague.name}</h1>
-        <p>{t.leagueCode}: {selectedLeague.code}</p>
+        <div className="side-menu-list">
+          {menuItems.map((item) => (
+            <button key={item.key} className={activeTab === item.key ? "active" : ""} onClick={() => { setActiveTab(item.key); setMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+              <span>{item.icon}</span>{item.label}
+            </button>
+          ))}
+        </div>
+      </aside>
+      <div className="card wide-card league-card">
+        <div className="league-sticky-header">
+          <div className="league-header-main">
+            <button onClick={() => setSelectedLeague(null)} className="icon-header-btn back-icon" title={t.backToDashboard}>←</button>
+            <img src={logo} alt="logo" className="mini-logo" />
+            <div className="league-header-title">
+              <h1>{selectedLeague.name}</h1>
+              <small>{t.leagueCode}: {selectedLeague.code}</small>
+            </div>
+            {showQuickActions && <div className="quick-actions">
+              <button type="button" className="quick-icon danger" onClick={quickClear} title="Cancella">🗑️</button>
+              <button type="button" className="quick-icon save" onClick={quickSave} title="Salva">💾</button>
+            </div>}
+          </div>
+          <div className="league-header-sub">
+            <button type="button" className="menu-trigger" onClick={() => setMenuOpen(true)}>☰</button>
+            <div className="active-section-title"><span>{activeMenuItem.icon}</span>{activeMenuItem.label}</div>
+          </div>
+        </div>
 
-        <div className="tabs">
-          <button onClick={() => setActiveTab("home")}>🏠 {t.leagueHome || "Home Lega"}</button>
-          <button onClick={() => setActiveTab("partite")}>{t.groupPredictions}</button>
-          <button onClick={() => setActiveTab("eliminazione")}>{t.knockoutPredictions}</button>
-          <button onClick={() => setActiveTab("passaggio-turno")}>Passaggio Turno</button>
-          <button onClick={() => setActiveTab("piazzamento-gironi")}>Piazzamento Gironi</button>
-          <button onClick={() => setActiveTab("capocannoniere")}>{t.topScorer}</button>
-          <button onClick={() => setActiveTab("utenti")}>{t.usersPredictions}</button>
-          <button onClick={() => setActiveTab("classifica")}>{t.participantsRanking}</button>
-          <button onClick={() => setActiveTab("gironi")}>{t.groupRanking}</button>
-          <button onClick={() => setActiveTab("tabellone")}>{t.bracket}</button>
-          <button onClick={() => setActiveTab("settings")}>{t.settings}</button>
-          {isAdmin && <button onClick={() => setActiveTab("admin")}>{t.admin}</button>}
-          {isAdmin && <button onClick={() => setActiveTab("league-settings")}>{t.leagueSettings}</button>}
-          <button onClick={() => setActiveTab("regole")}>{t.rules}</button>
-        </div>
+        <div className="league-content">
 
         {activeTab === "home" && <>
           <h2>🏠 {t.leagueHome || "Home Lega"}</h2>
@@ -1517,8 +1561,8 @@ function App() {
               </div>
             </div>;
           })}
-          <button onClick={saveAllPredictions} className="btn green">{t.saveAllPredictions}</button>
-          <button onClick={() => clearMatchPredictions(matches)} className="btn danger">🗑 Cancella Tutto</button>
+          <button onClick={saveAllPredictions} className="btn green legacy-action">{t.saveAllPredictions}</button>
+          <button onClick={() => clearMatchPredictions(matches)} className="btn danger legacy-action">🗑 Cancella Tutto</button>
         </>}
 
         {activeTab === "utenti" && <>
@@ -1688,8 +1732,8 @@ function App() {
               </div>
             ))}
           </div>
-          <button onClick={() => saveAllPredictions(knockoutMatches)} className="btn green">{t.saveKnockoutPredictions}</button>
-          <button onClick={() => clearMatchPredictions(knockoutMatches)} className="btn danger">🗑 Cancella Tutto</button>
+          <button onClick={() => saveAllPredictions(knockoutMatches)} className="btn green legacy-action">{t.saveKnockoutPredictions}</button>
+          <button onClick={() => clearMatchPredictions(knockoutMatches)} className="btn danger legacy-action">🗑 Cancella Tutto</button>
         </>}
 
 
@@ -1724,8 +1768,8 @@ function App() {
               <option value="">Seleziona vincente</option>{getAvailableTeamsForSelection([], -1, getQualificationSourceTeams("champion")).map((team) => <option key={team} value={team}>{team}</option>)}
             </select>
           </div>}
-          <button disabled={isTournamentStarted()} className="btn green" onClick={saveBonusPredictions}>Salva Passaggio Turno</button>
-          <button disabled={isTournamentStarted()} className="btn danger" onClick={() => clearBonusSection("qualification")}>🗑 Cancella Tutto</button>
+          <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveBonusPredictions}>Salva Passaggio Turno</button>
+          <button disabled={isTournamentStarted()} className="btn danger legacy-action" onClick={() => clearBonusSection("qualification")}>🗑 Cancella Tutto</button>
         </>}
 
         {activeTab === "piazzamento-gironi" && <>
@@ -1749,8 +1793,8 @@ function App() {
               </div>
             </div>;
           })}
-          <button disabled={isTournamentStarted()} className="btn green" onClick={saveBonusPredictions}>Salva Piazzamento Gironi</button>
-          <button disabled={isTournamentStarted()} className="btn danger" onClick={() => clearBonusSection("group_position")}>🗑 Cancella Tutto</button>
+          <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveBonusPredictions}>Salva Piazzamento Gironi</button>
+          <button disabled={isTournamentStarted()} className="btn danger legacy-action" onClick={() => clearBonusSection("group_position")}>🗑 Cancella Tutto</button>
         </>}
 
         {activeTab === "capocannoniere" && <>
@@ -1774,7 +1818,7 @@ function App() {
           <small style={{ display: "block", color: "#9fb1c8", marginBottom: 10 }}>
             {playersLoading ? t.loadingPlayers : `${filteredTopScorers.length}/${selectableTopScorers.length} ${t.playersAvailable || "giocatori disponibili"}`}
           </small>
-          <button disabled={isTournamentStarted()} className="btn green" onClick={saveTopScorerPrediction}>{t.saveTopScorer}</button>
+          <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveTopScorerPrediction}>{t.saveTopScorer}</button>
           {renderTopScorerRankingBox()}
         </>}
 
@@ -1854,6 +1898,7 @@ function App() {
         </>}
 
         <p>{message}</p>
+        </div>
       </div></div>
     );
   }

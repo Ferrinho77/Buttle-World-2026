@@ -90,7 +90,7 @@ export default function ParticipantsRanking({
 
       <div className="league-box">
         <p>
-          <strong>Legenda:</strong> Tot = Punti Totali; RE = Risultati Esatti; SC = Segni Corretti; PT = Bonus Passaggio Turno; PG = Bonus Piazzamento Gironi; CC = Bonus Capocannoniere.
+          <strong>Legenda:</strong> Tot = Punti Totali; RE = Risultati Esatti; SC = Segni Corretti; PT = Bonus Qualificate; PG = Bonus Classifica Gruppi; CC = Bonus Golden Boot.
         </p>
       </div>
     </>

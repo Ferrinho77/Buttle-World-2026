@@ -34,7 +34,7 @@ export default function AdminPanel({
 
   return (
     <>
-      <h2>🛠️ Admin Panel</h2>
+      <h2>🛠️ Control Room</h2>
 
       <div className="admin-dashboard-grid">
         <div className="admin-stat-card">

@@ -29,9 +29,9 @@ export default function UsersPredictions({
 
           <h2>{t.usersPredictions}</h2>
           <div className="subtabs">
-            <button className={usersSubTab === "match" ? "active" : ""} onClick={() => setUsersSubTab("match")}>Partite</button>
-            <button className={usersSubTab === "pt" ? "active" : ""} onClick={() => setUsersSubTab("pt")}>Passaggio Turno</button>
-            <button className={usersSubTab === "pg" ? "active" : ""} onClick={() => setUsersSubTab("pg")}>Piazzamento Gironi</button>
+            <button className={usersSubTab === "match" ? "active" : ""} onClick={() => setUsersSubTab("match")}>Match</button>
+            <button className={usersSubTab === "pt" ? "active" : ""} onClick={() => setUsersSubTab("pt")}>Qualificate</button>
+            <button className={usersSubTab === "pg" ? "active" : ""} onClick={() => setUsersSubTab("pg")}>Classifica Gruppi</button>
           </div>
           <div className="user-filter-box">
             <label>Visualizza utente</label>
@@ -40,7 +40,7 @@ export default function UsersPredictions({
               {users.map((name) => <option key={name} value={name}>{name}</option>)}
             </select>
           </div>
-          {usersSubTab === "match" && <><div className="grid-scroll"><table className="predictions-grid">
+          {usersSubTab === "match" && <><div className="grid-scroll users-mobile-table"><table className="predictions-grid users-predictions-table">
             <thead><tr><th className="sticky-col sticky-head">{t.match}</th><th className="sticky-head">{t.realResult}</th>{filteredUsers.map((name) => <th key={name} className="sticky-head">{name}</th>)}</tr></thead>
             <tbody>
               <tr>
@@ -70,8 +70,8 @@ export default function UsersPredictions({
             </tbody>
           </table></div>
           <div className="league-box"><p>🟩 {t.exactLegend}</p><p>🟨 {t.outcomeLegend}</p></div></>}
-          {usersSubTab === "pt" && leagueSettings.enable_qualification_bonus && <div className="league-box"><h3>✅ Pronostici PT Utenti</h3><div className="grid-scroll"><table className="predictions-grid"><thead><tr><th className="sticky-col sticky-head">Utente</th>{qualificationRounds.map((r) => <th className="sticky-head" key={r.key}>{r.label}</th>)}<th className="sticky-head">Vincente</th></tr></thead><tbody>{filteredUsers.map((name) => { const map = getBonusPredictionMapForUser(name); return <tr key={name}><td className="sticky-col">{name}</td>{qualificationRounds.map((r) => <td key={r.key}>{(map[`qualification::${r.key}`] || []).map((team) => <div key={team} className="mini-chip" style={{ background: getBonusCellColor("qualification", r.key, team) }}>{team}</div>)}</td>)}<td><div className="mini-chip" style={{ background: getBonusCellColor("qualification", "champion", map[`qualification::champion`]) }}>{map[`qualification::champion`] || "-"}</div></td></tr>; })}</tbody></table></div></div>}
-          {usersSubTab === "pg" && leagueSettings.enable_group_positions_bonus && <div className="league-box"><h3>📊 Piazzamento Gironi</h3><div className="grid-scroll"><table className="predictions-grid pg-vertical-grid"><thead><tr><th className="sticky-col sticky-head">Gruppo / posizione</th>{filteredUsers.map((name) => <th className="sticky-head" key={name}>{name}</th>)}</tr></thead><tbody>{groups.flatMap((g) => [0, 1, 2, 3].map((idx) => <tr key={`${g.name}-${idx}`}><td className="sticky-col"><strong>{trGroupName(g.name)}</strong><small>{idx + 1}° posizione</small></td>{filteredUsers.map((name) => { const map = getBonusPredictionMapForUser(name); const team = (map[`group_position::${g.name}`] || [])[idx]; return <td key={name} style={{ textAlign: "center" }}>{team ? <div className="mini-chip" style={{ background: getBonusCellColor("group_position", g.name, team, idx) }}>{team}</div> : "-"}</td>; })}</tr>))}</tbody></table></div></div>}
+          {usersSubTab === "pt" && leagueSettings.enable_qualification_bonus && <div className="league-box"><h3>✅ Pronostici PT Utenti</h3><div className="grid-scroll users-mobile-table"><table className="predictions-grid users-predictions-table"><thead><tr><th className="sticky-col sticky-head">Utente</th>{qualificationRounds.map((r) => <th className="sticky-head" key={r.key}>{r.label}</th>)}<th className="sticky-head">Vincente</th></tr></thead><tbody>{filteredUsers.map((name) => { const map = getBonusPredictionMapForUser(name); return <tr key={name}><td className="sticky-col">{name}</td>{qualificationRounds.map((r) => <td key={r.key}>{(map[`qualification::${r.key}`] || []).map((team) => <div key={team} className="mini-chip" style={{ background: getBonusCellColor("qualification", r.key, team) }}>{team}</div>)}</td>)}<td><div className="mini-chip" style={{ background: getBonusCellColor("qualification", "champion", map[`qualification::champion`]) }}>{map[`qualification::champion`] || "-"}</div></td></tr>; })}</tbody></table></div></div>}
+          {usersSubTab === "pg" && leagueSettings.enable_group_positions_bonus && <div className="league-box"><h3>📊 Classifica Gruppi</h3><div className="grid-scroll users-mobile-table"><table className="predictions-grid pg-vertical-grid"><thead><tr><th className="sticky-col sticky-head">Gruppo / posizione</th>{filteredUsers.map((name) => <th className="sticky-head" key={name}>{name}</th>)}</tr></thead><tbody>{groups.flatMap((g) => [0, 1, 2, 3].map((idx) => <tr key={`${g.name}-${idx}`}><td className="sticky-col"><strong>{trGroupName(g.name)}</strong><small>{idx + 1}° posizione</small></td>{filteredUsers.map((name) => { const map = getBonusPredictionMapForUser(name); const team = (map[`group_position::${g.name}`] || [])[idx]; return <td key={name} style={{ textAlign: "center" }}>{team ? <div className="mini-chip" style={{ background: getBonusCellColor("group_position", g.name, team, idx) }}>{team}</div> : "-"}</td>; })}</tr>))}</tbody></table></div></div>}
 
   </>;
 }

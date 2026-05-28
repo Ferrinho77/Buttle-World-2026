@@ -1033,7 +1033,7 @@ function getPredictionLockText(match) {
       // Fallback: se Edge Function/API non è configurata, non blocchiamo l'app.
       await loadRealResults(true);
       await loadMatchEvents(true);
-      setLiveSyncStatus("Live API non configurata: uso risultati Admin/Supabase");
+      setLiveSyncStatus("Live API non configurata: uso risultati Control Room/Supabase");
       setNextLiveSyncAt(getNextSyncDate(liveMode ? LIVE_REFRESH_MS : IDLE_REFRESH_MS));
       if (!silent) setMessage(error?.message || "Live API non configurata");
     }
@@ -1525,11 +1525,11 @@ function getPredictionLockText(match) {
             <p>Modalità attuale: <strong>{leagueSettings.exact_score_mode === "bands" ? "A fasce" : "Standard"}</strong>.</p>
             {leagueSettings.exact_score_mode === "bands" ? <p>Facili: {leagueSettings.exact_easy_points} pt — Medi: {leagueSettings.exact_medium_points} pt — Difficili: {leagueSettings.exact_hard_points} pt.</p> : <p>Tutti i risultati esatti valgono <strong>{leagueSettings.exact_score_points} pt</strong>.</p>}
             <p>Segno corretto: <strong>{leagueSettings.outcome_points} pt</strong>.</p>
-            <h3>🏆 Passaggio Turno (PT)</h3>
+            <h3>🏆 Qualificate (PT)</h3>
             <p>Gli utenti pronosticano squadre qualificate a sedicesimi, ottavi, quarti, semifinali, finale e vincitrice mondiale. Il pronostico si blocca all’inizio della prima partita del torneo.</p>
-            <h3>📊 Piazzamento Gironi (PG)</h3>
+            <h3>📊 Classifica Gruppi (PG)</h3>
             <p>Gli utenti pronosticano la posizione 1ª, 2ª, 3ª e 4ª di ogni girone. Si prende bonus solo per la posizione esatta.</p>
-            <h3>⚽ Capocannoniere</h3>
+            <h3>⚽ Golden Boot</h3>
             <p>Il capocannoniere vale <strong>{leagueSettings.top_scorer_points} pt</strong> e si blocca all’inizio del torneo.</p>
             <h3>🧮 Classifica</h3>
             <p>Tot = punti totali, RE = risultati esatti, SC = segni corretti, PT = bonus passaggio turno, PG = bonus piazzamento gironi, CC = bonus capocannoniere.</p>
@@ -1560,7 +1560,7 @@ function getPredictionLockText(match) {
           <h2>{t.leagueSettings}</h2>
           <div className="league-box live-api-box">
             <h3>🌐 Live API</h3>
-            <p>La sincronizzazione automatica usa la Supabase Edge Function <strong>sync-live-results</strong>: ogni 10 minuti quando ci sono partite LIVE, ogni 2 ore quando non ci sono partite LIVE. Se non configuri la chiave API, l'app continua a funzionare con i risultati inseriti dall'Admin.</p>
+            <p>La sincronizzazione automatica usa la Supabase Edge Function <strong>sync-live-results</strong>: ogni 10 minuti quando ci sono partite LIVE, ogni 2 ore quando non ci sono partite LIVE. Se non configuri la chiave API, l'app continua a funzionare con i risultati inseriti dall'Control Room.</p>
             <p><strong>Stato:</strong> {liveSyncStatus || "In attesa della prima sincronizzazione"}</p>
           </div>
           <div className="league-box">
@@ -1703,7 +1703,7 @@ function getPredictionLockText(match) {
 
 
         {activeTab === "passaggio-turno" && <>
-          <h2>Passaggio Turno</h2>
+          <h2>Qualificate</h2>
           <div className="league-box section-sticky-panel">
             <p style={{ color: isTournamentStarted() ? "#f5a524" : "#9fb1c8" }}>
               {isTournamentStarted() ? "🔒 Pronostici bloccati: il torneo è già iniziato" : `Compilabile fino al calcio d’inizio della prima partita: ${formatTournamentStart()}`}
@@ -1733,12 +1733,12 @@ function getPredictionLockText(match) {
               <option value="">Seleziona vincente</option>{getAvailableTeamsForSelection([], -1, getQualificationSourceTeams("champion")).map((team) => <option key={team} value={team}>{team}</option>)}
             </select>
           </div>}
-          <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveBonusPredictions}>Salva Passaggio Turno</button>
+          <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveBonusPredictions}>Salva Qualificate</button>
           <button disabled={isTournamentStarted()} className="btn danger legacy-action" onClick={() => clearBonusSection("qualification")}>🗑 Cancella Tutto</button>
         </>}
 
         {activeTab === "piazzamento-gironi" && <>
-          <h2>Piazzamento Gironi</h2>
+          <h2>Classifica Gruppi</h2>
           <div className="league-box section-sticky-panel">
             <p style={{ color: isTournamentStarted() ? "#f5a524" : "#9fb1c8" }}>
               {isTournamentStarted() ? "🔒 Pronostici bloccati: il torneo è già iniziato" : `Compilabile fino al calcio d’inizio della prima partita: ${formatTournamentStart()}`}
@@ -1758,7 +1758,7 @@ function getPredictionLockText(match) {
               </div>
             </div>;
           })}
-          <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveBonusPredictions}>Salva Piazzamento Gironi</button>
+          <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveBonusPredictions}>Salva Classifica Gruppi</button>
           <button disabled={isTournamentStarted()} className="btn danger legacy-action" onClick={() => clearBonusSection("group_position")}>🗑 Cancella Tutto</button>
         </>}
 

@@ -97,7 +97,7 @@ export default function LeagueHome({
 
       <div className="home-panel quick-rules-panel">
         <h3>📜 {t.rules}</h3>
-        <p><strong>RE</strong> = {t.exactScore}; <strong>SC</strong> = {t.correctOutcome}; <strong>PT</strong> = {t.qualificationBonus || "Passaggio Turno"}; <strong>PG</strong> = {t.groupPlacementBonus || "Piazzamento Gironi"}; <strong>CC</strong> = {t.topScorer}.</p>
+        <p><strong>RE</strong> = {t.exactScore}; <strong>SC</strong> = {t.correctOutcome}; <strong>PT</strong> = {t.qualificationBonus || "Qualificate"}; <strong>PG</strong> = {t.groupPlacementBonus || "Classifica Gruppi"}; <strong>CC</strong> = {t.topScorer}.</p>
         <p>{leagueSettings.prediction_lock_mode === "tournament"
           ? "I pronostici match si bloccano all’inizio della prima partita del torneo."
           : "I pronostici match si bloccano al calcio d’inizio della relativa partita."}</p>

@@ -206,10 +206,6 @@ export default function UsersPredictions({
             </table>
           </div>
 
-          <div className="league-box">
-            <p>🟩 {t.exactLegend}</p>
-            <p>🟨 {t.outcomeLegend}</p>
-          </div>
         </>
       )}
 
@@ -280,12 +276,6 @@ export default function UsersPredictions({
               </tbody>
             </table>
           </div>
-
-          <div className="prediction-real-legend">
-            <span><i className="dot dot-pred"></i>Pronostico</span>
-            <span><i className="dot dot-real"></i>Reale</span>
-            <span><i className="dot dot-exact"></i>Combo esatta</span>
-          </div>
         </div>
       )}
 
@@ -333,6 +323,46 @@ export default function UsersPredictions({
                 )}
               </tbody>
             </table>
+          </div>
+
+          <div className="mobile-groups-user-cards">
+            {filteredPlayers.map((name) => {
+              const map = getBonusPredictionMapForPlayer(name);
+
+              return (
+                <div className="mobile-group-user-card" key={name}>
+                  <div className="mobile-group-user-head">
+                    <span>User</span>
+                    <strong>{name}</strong>
+                  </div>
+
+                  {groups.map((g) => (
+                    <div className="mobile-group-box" key={g.name}>
+                      <h4>{trGroupName(g.name)}</h4>
+                      {[0, 1, 2, 3].map((idx) => {
+                        const team = (map[`group_position::${g.name}`] || [])[idx];
+
+                        return (
+                          <div className="mobile-group-position-row" key={`${g.name}-${idx}`}>
+                            <span>{idx + 1}°</span>
+                            {team ? (
+                              <strong
+                                className="mini-chip"
+                                style={{ background: getBonusCellColor("group_position", g.name, team, idx) }}
+                              >
+                                {team}
+                              </strong>
+                            ) : (
+                              <strong>-</strong>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

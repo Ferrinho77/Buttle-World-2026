@@ -48,13 +48,6 @@ export default function KnockoutPredictions({
   return (
     <>
       <h2>{t.knockoutStagePredictions}</h2>
-
-      <div className="prediction-real-legend">
-        <span><i className="dot dot-slot"></i>Slot</span>
-        <span><i className="dot dot-real"></i>Squadra reale</span>
-        <span><i className="dot dot-exact"></i>Risultato corretto</span>
-      </div>
-
       <div className="league-box solid-info-box">
         <p>
           In questa sezione si pronostica il risultato della Fase Finale. Prima della definizione dei gironi vedi gli slot ufficiali; quando saranno disponibili, vedrai anche le squadre reali.

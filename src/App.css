@@ -3945,3 +3945,16 @@ body {
 .prediction-real-legend {
   display: none !important;
 }
+
+
+/* STEP 16B - translation fixes */
+.settings-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.settings-actions .btn {
+  flex: 1 1 160px;
+}

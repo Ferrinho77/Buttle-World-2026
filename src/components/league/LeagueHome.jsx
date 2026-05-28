@@ -57,7 +57,7 @@ export default function LeagueHome({
         <div className="home-panel">
           <h3>🔴 LIVE</h3>
           {liveMatchesHome.length === 0 ? (
-            <p>{t.noLiveMatches || "Nessuna partita live"}</p>
+            <p>{t.noLiveMatches}</p>
           ) : (
             liveMatchesHome.map((m) => (
               <div key={m.id} className="home-match-card live-card">
@@ -68,7 +68,7 @@ export default function LeagueHome({
           )}
         </div>
         <div className="home-panel">
-          <h3>⏳ {t.nextMatches || "Prossime partite"}</h3>
+          <h3>⏳ {t.nextMatches}</h3>
           {nextMatchesHome.length === 0 ? (
             <p>{t.toBeDefined}</p>
           ) : (
@@ -86,7 +86,7 @@ export default function LeagueHome({
         <div className="home-panel countdown-panel">
           <h3>⏳ {leagueSettings.prediction_lock_mode === "tournament" ? "Chiusura pronostici torneo" : "Prossima chiusura pronostico"}</h3>
           {leagueSettings.prediction_lock_mode === "tournament" ? (
-            <p>Prima partita del torneo</p>
+            <p>{t.firstTournamentMatch || 'Prima partita del torneo'}</p>
           ) : (
             <p>{countdownTargetMatch ? `${trTeamLabel(countdownTargetMatch.home)} - ${trTeamLabel(countdownTargetMatch.away)}` : "Prossima partita"}</p>
           )}
@@ -97,7 +97,7 @@ export default function LeagueHome({
 
       <div className="home-panel quick-rules-panel">
         <h3>📜 {t.rules}</h3>
-        <p><strong>RE</strong> = {t.exactScore}; <strong>SC</strong> = {t.correctOutcome}; <strong>PT</strong> = {t.qualificationBonus || "Qualificate"}; <strong>PG</strong> = {t.groupPlacementBonus || "Classifica Gruppi"}; <strong>CC</strong> = {t.topScorer}.</p>
+        <p><strong>RE</strong> = {t.exactScore}; <strong>SC</strong> = {t.correctOutcome}; <strong>PT</strong> = {t.qualificationBonus || t.qualificationStage}; <strong>PG</strong> = {t.groupPlacementBonus || t.groupPlacement}; <strong>CC</strong> = {t.topScorer}.</p>
         <p>{leagueSettings.prediction_lock_mode === "tournament"
           ? "I pronostici match si bloccano all’inizio della prima partita del torneo."
           : "I pronostici match si bloccano al calcio d’inizio della relativa partita."}</p>

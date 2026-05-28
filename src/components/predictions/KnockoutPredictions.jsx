@@ -50,7 +50,7 @@ export default function KnockoutPredictions({
       <h2>{t.knockoutStagePredictions}</h2>
       <div className="league-box solid-info-box">
         <p>
-          In questa sezione si pronostica il risultato della Fase Finale. Prima della definizione dei gironi vedi gli slot ufficiali; quando saranno disponibili, vedrai anche le squadre reali.
+          {t.finalStageInfo}
         </p>
       </div>
 
@@ -86,7 +86,7 @@ export default function KnockoutPredictions({
 
                       <div className="simple-score-row">
                         <label>
-                          <span>Risultato 1</span>
+                          <span>{t.result1}</span>
                           <input
                             className={missingPredictionClass?.(match.id, "home_score") || ""}
                             disabled={locked}
@@ -99,7 +99,7 @@ export default function KnockoutPredictions({
                         </label>
 
                         <label>
-                          <span>Risultato 2</span>
+                          <span>{t.result2}</span>
                           <input
                             className={missingPredictionClass?.(match.id, "away_score") || ""}
                             disabled={locked}

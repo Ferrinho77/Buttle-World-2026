@@ -16,6 +16,7 @@ function getLiveMinute(match, result) {
 }
 
 export default function LiveMatchCard({
+  t,
   match,
   result,
   events = [],
@@ -65,7 +66,7 @@ export default function LiveMatchCard({
       {!compact && (
         <>
           <MatchTimeline match={match} result={result} minute={minute} />
-          <MatchEvents match={match} result={result} events={events} trTeamLabel={trTeamLabel} />
+          <MatchEvents t={t} match={match} result={result} events={events} trTeamLabel={trTeamLabel} />
         </>
       )}
     </div>

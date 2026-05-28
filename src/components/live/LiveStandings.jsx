@@ -13,7 +13,7 @@ export default function LiveStandings({ groups, getGroupStandings, trTeamLabel, 
               <table>
                 <thead>
                   <tr>
-                    <th>Squadra</th>
+                    <th>{t.team}</th>
                     <th>Pt</th>
                     <th>DR</th>
                   </tr>

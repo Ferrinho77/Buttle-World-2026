@@ -45,7 +45,7 @@ function buildMockEvents(match, result, trTeamLabel) {
       icon: "⚽",
       side: "home",
       title: `Gol ${homeName}`,
-      detail: "Evento simulato: in attesa dati evento reali",
+      detail: "Simulated event: waiting for real event data",
     });
   }
 
@@ -55,20 +55,20 @@ function buildMockEvents(match, result, trTeamLabel) {
       icon: "⚽",
       side: "away",
       title: `Gol ${awayName}`,
-      detail: "Evento simulato: in attesa dati evento reali",
+      detail: "Simulated event: waiting for real event data",
     });
   }
 
   return events.sort((a, b) => a.minute - b.minute);
 }
 
-export default function MatchEvents({ match, result, events = [], trTeamLabel }) {
+export default function MatchEvents({ t, match, result, events = [], trTeamLabel }) {
   if (!result) {
     return (
       <div className="match-events pro-events">
         <div className="event-empty">
-          <strong>Timeline non ancora disponibile</strong>
-          <small>Gli eventi appariranno quando sarà presente un risultato live.</small>
+          <strong>{t.timelineUnavailable || 'Timeline unavailable'}</strong>
+          <small>{t.matchEventsEmpty}</small>
         </div>
       </div>
     );
@@ -81,14 +81,14 @@ export default function MatchEvents({ match, result, events = [], trTeamLabel })
   return (
     <div className="match-events pro-events">
       <div className="events-title-row">
-        <strong>Eventi partita</strong>
-        <small>{isReal ? "API-Football" : "Fallback simulato"}</small>
+        <strong>{t.matchEvents}</strong>
+        <small>{isReal ? "API-Football" : (t.simulatedFallback || "Simulated fallback")}</small>
       </div>
 
       {shownEvents.length === 0 ? (
         <div className="event-empty">
-          <strong>Nessun evento</strong>
-          <small>Risultato ancora senza gol o eventi principali.</small>
+          <strong>{t.noEvents || 'No events'}</strong>
+          <small>{t.noMajorEvents}</small>
         </div>
       ) : (
         <div className="event-feed">

@@ -34,7 +34,7 @@ export default function AdminPanel({
 
   return (
     <>
-      <h2>🛠️ Control Room</h2>
+      <h2>🛠️ {t.admin}</h2>
 
       <div className="admin-dashboard-grid">
         <div className="admin-stat-card">
@@ -57,21 +57,21 @@ export default function AdminPanel({
 
       <div className="admin-toolbar league-box admin-toolbar-sticky">
         <div>
-          <label>Filtro partite</label>
+          <label>{t.matchFilter || 'Filtro partite'}</label>
           <select value={adminMatchFilter} onChange={(event) => setAdminMatchFilter(event.target.value)}>
-            <option value="all">Tutte</option>
-            <option value="pending">Da inserire</option>
-            <option value="live">Live</option>
-            <option value="final">Finali</option>
+            <option value="all">{t.all || 'Tutte'}</option>
+            <option value="pending">{t.toEnter || 'Da inserire'}</option>
+            <option value="live">{t.live}</option>
+            <option value="final">{t.finals || 'Finali'}</option>
           </select>
         </div>
-        <button className="btn blue" onClick={() => syncLiveResults(false)}>🌐 Sincronizza risultati live ora</button>
-        <button className="btn blue" onClick={recalculateLeagueData}>🔄 Ricalcola classifica</button>
+        <button className="btn blue" onClick={() => syncLiveResults(false)}>🌐 {t.syncLiveNow || 'Sincronizza risultati live ora'}</button>
+        <button className="btn blue" onClick={recalculateLeagueData}>🔄 {t.recalculateRanking || 'Ricalcola classifica'}</button>
       </div>
 
       <div className="admin-section-title">
         <h3>{t.insertRealResults}</h3>
-        <p className="bonus-help">I risultati LIVE aggiornano subito classifica partecipanti, classifica gironi e tabellone. I risultati FINAL rendono i punti definitivi.</p>
+        <p className="bonus-help">{t.adminLiveInfo || 'I risultati LIVE aggiornano subito classifica partecipanti, classifica gironi e tabellone. I risultati FINAL rendono i punti definitivi.'}</p>
       </div>
 
       <div className="admin-match-grid">
@@ -107,7 +107,7 @@ export default function AdminPanel({
       <div className="admin-two-columns">
         <div className="league-box">
           <h3>🔴 {t.topScorerRanking}</h3>
-          <p className="bonus-help">Aggiorna i gol provvisori dei capocannonieri durante il torneo.</p>
+          <p className="bonus-help">{t.adminTopScorerInfo || 'Aggiorna i gol provvisori dei capocannonieri durante il torneo.'}</p>
           <select value={topScorerGoalsPlayer} onChange={(event) => setTopScorerGoalsPlayer(event.target.value)}>
             <option value="">{t.selectPlayer}</option>
             {selectableTopScorers.map((player) => <option key={player} value={player}>{player}</option>)}

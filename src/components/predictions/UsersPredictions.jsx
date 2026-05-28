@@ -54,6 +54,10 @@ function getDefaultQualificationRound(qualificationRounds) {
   );
 }
 
+function localFormatText(template, values = {}) {
+  return String(template || "").replace(/\{(\w+)\}/g, (_, key) => values[key] ?? "");
+}
+
 export default function UsersPredictions({
   t,
   usersSubTab,
@@ -127,12 +131,12 @@ export default function UsersPredictions({
       </div>
 
       <div className="user-filter-box player-filter-box">
-        <label>Visualizza user</label>
+        <label>{t.viewUser}</label>
         <select
           value={selectedPredictionPlayer}
           onChange={(e) => setSelectedPredictionPlayer(e.target.value)}
         >
-          <option value="__all__">Tutti gli user</option>
+          <option value="__all__">{t.allUsers}</option>
           {users.map((name) => (
             <option key={name} value={name}>{name}</option>
           ))}
@@ -145,7 +149,7 @@ export default function UsersPredictions({
             <table className="predictions-grid users-predictions-table">
               <thead>
                 <tr>
-                  <th className="sticky-col sticky-head">Partita</th>
+                  <th className="sticky-col sticky-head">{t.match}</th>
                   <th className="sticky-head">{t.realResult}</th>
                   {filteredPlayers.map((name) => (
                     <th key={name} className="sticky-head">{name}</th>
@@ -211,11 +215,11 @@ export default function UsersPredictions({
 
       {usersSubTab === "pt" && leagueSettings.enable_qualification_bonus && (
         <div className="league-box center-prediction-section">
-          <h3>✅ Qualificate per User</h3>
+          <h3>✅ {t.qualifiedByUser}</h3>
 
           <div className="qualification-toolbar">
             <div>
-              <label>Turno</label>
+              <label>{t.round}</label>
               <select
                 value={selectedQualificationRound}
                 onChange={(e) => setSelectedQualificationRound(e.target.value)}
@@ -229,9 +233,9 @@ export default function UsersPredictions({
             </div>
 
             <div className="qualification-summary">
-              <span>Vista confronto</span>
+              <span>{t.comparisonView}</span>
               <strong>
-                {selectedRound?.label || "-"} · {fixedRowCount || 0} squadre
+                {localFormatText(t.roundTeamsCount, { round: selectedRound?.label || "-", count: fixedRowCount || 0 })}
               </strong>
             </div>
           </div>
@@ -240,9 +244,7 @@ export default function UsersPredictions({
             <table className="qualification-excel-table">
               <thead>
                 <tr>
-                  <th className="sticky-col sticky-head round-label-head">
-                    Turno
-                  </th>
+                  <th className="sticky-col sticky-head round-label-head">{t.round}</th>
                   {filteredPlayers.map((name) => (
                     <th className="sticky-head" key={name}>{name}</th>
                   ))}
@@ -281,13 +283,13 @@ export default function UsersPredictions({
 
       {usersSubTab === "pg" && leagueSettings.enable_group_positions_bonus && (
         <div className="league-box center-prediction-section">
-          <h3>📊 Gruppi per User</h3>
+          <h3>📊 {t.groupsByUser}</h3>
 
           <div className="desktop-users-table grid-scroll users-mobile-table">
             <table className="predictions-grid pg-vertical-grid users-predictions-table">
               <thead>
                 <tr>
-                  <th className="sticky-col sticky-head group-pos-head">Gruppo / pos.</th>
+                  <th className="sticky-col sticky-head group-pos-head">{t.group} / {t.position}</th>
                   {filteredPlayers.map((name) => (
                     <th className="sticky-head" key={name}>{name}</th>
                   ))}
@@ -332,7 +334,7 @@ export default function UsersPredictions({
               return (
                 <div className="mobile-group-user-card" key={name}>
                   <div className="mobile-group-user-head">
-                    <span>User</span>
+                    <span>{t.user}</span>
                     <strong>{name}</strong>
                   </div>
 

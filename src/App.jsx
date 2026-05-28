@@ -105,6 +105,10 @@ function App() {
   );
   const t = translations[language] || translations.it;
 
+  function formatText(template, values = {}) {
+    return String(template || "").replace(/\{(\w+)\}/g, (_, key) => values[key] ?? "");
+  }
+
   useEffect(() => {
     setValidationMessage("");
     setMissingPredictionFields({});
@@ -120,27 +124,31 @@ function App() {
   }, [message]);
   const allTeams = groups.flatMap((group) => group.teams);
   const qualificationRounds = [
-    { key: "round32", label: "Sedicesimi", count: 32, pointsKey: "bonus_round32_points" },
-    { key: "round16", label: "Ottavi", count: 16, pointsKey: "bonus_round16_points" },
-    { key: "quarter", label: "Quarti", count: 8, pointsKey: "bonus_quarter_points" },
-    { key: "semi", label: "Semifinali", count: 4, pointsKey: "bonus_semi_points" },
-    { key: "final", label: "Finale", count: 2, pointsKey: "bonus_final_points" },
+    { key: "round32", label: t.roundOf32, count: 32, pointsKey: "bonus_round32_points" },
+    { key: "round16", label: t.roundOf16, count: 16, pointsKey: "bonus_round16_points" },
+    { key: "quarter", label: t.quarterFinals, count: 8, pointsKey: "bonus_quarter_points" },
+    { key: "semi", label: t.semiFinals, count: 4, pointsKey: "bonus_semi_points" },
+    { key: "final", label: t.final, count: 2, pointsKey: "bonus_final_points" },
   ];
 
-  function trRoundName(name) {
-    const map = {
-      "Sedicesimi": t.roundOf32,
-      "Ottavi": t.roundOf16,
-      "Quarti": t.quarterFinals,
-      "Semifinali": t.semiFinals,
-      "Finale 3° posto": t.thirdPlaceFinal,
-      "Finale": t.final,
-    };
-    return map[name] || name;
+  function trRoundName(round) {
+    const value = String(round || "").toLowerCase();
+    if (value.includes("sedices") || value.includes("round32") || value.includes("32")) return t.roundOf32;
+    if (value.includes("ottav") || value.includes("round16") || value.includes("16")) return t.roundOf16;
+    if (value.includes("quart") || value.includes("quarter")) return t.quarterFinals;
+    if (value.includes("semif") || value.includes("semi")) return t.semiFinals;
+    if (value.includes("final")) return t.final;
+    return round;
   }
 
-  function trGroupName(name) {
-    return String(name).replace("Gruppo", t.group);
+  function trGroupName(groupName) {
+    const text = String(groupName || "");
+    const match = text.match(/([A-L])$/i);
+    if (match) {
+      const key = `group${match[1].toUpperCase()}`;
+      return t[key] || formatText(t.groupLabel, { group: match[1].toUpperCase() });
+    }
+    return groupName;
   }
 
   function trDate(value) {
@@ -411,7 +419,7 @@ function getPredictionLockText(match) {
       if (String(match?.id || "").startsWith("ko-")) return `Compilabile fino alla prima partita del turno ${trRoundName(match.round)}: ${label}`;
       return `Compilabile fino alla prima partita del torneo: ${label}`;
     }
-    return `Compilabile fino al calcio d’inizio della partita: ${label}`;
+    return `{t.editableUntilMatchKickoff} ${label}`;
   }
 
   function isPredictionLocked(match) {
@@ -445,7 +453,7 @@ function getPredictionLockText(match) {
 
   function renderCountdownBox(parts) {
     if (!parts) return null;
-    if (parts.expired) return <strong className="countdown-expired">🔒 Pronostici chiusi</strong>;
+    if (parts.expired) return <strong className="countdown-expired">🔒 {t.predictionsClosed || 'Pronostici chiusi'}</strong>;
     return (
       <div className="countdown-box">
         <span><strong>{parts.days}</strong><small>giorni</small></span>
@@ -975,7 +983,7 @@ function getPredictionLockText(match) {
     const count = Object.keys(missing).length;
 
     if (count > 0) {
-      const text = `Configurazione incompleta: mancano ${count} campi obbligatori. Li ho evidenziati in rosso.`;
+      const text = formatText(t.configIncomplete, { count });
       setMessage(text);
       setValidationMessage(text);
       setTimeout(() => {
@@ -1152,7 +1160,7 @@ function getPredictionLockText(match) {
     const homeScore = Number(home);
     const awayScore = Number(away);
     if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore) || homeScore < 0 || awayScore < 0 || homeScore > 20 || awayScore > 20) {
-      setMessage("Inserisci uno score valido da 0 a 20");
+      setMessage(t.enterRealResult);
       return;
     }
     const { error } = await supabase.from("real_results").upsert({ match_id: matchId, home_score: homeScore, away_score: awayScore, finished });
@@ -1201,7 +1209,7 @@ function getPredictionLockText(match) {
   }
 
   async function resetPassword() {
-    if (!email) { setMessage(t.enterEmailForReset || "Inserisci la tua email per recuperare la password"); return; }
+    if (!email) { setMessage(t.enterEmailForReset || t.enterEmailForReset); return; }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/#reset-password`,
     });
@@ -1341,7 +1349,7 @@ function getPredictionLockText(match) {
     const count = Object.keys(missing).length;
 
     if (count > 0) {
-      const text = `Mancano ${count} risultati da compilare. I campi mancanti sono evidenziati in rosso.`;
+      const text = formatText(t.validationMissingResults, { count });
       setMessage(text);
       setValidationMessage(text);
 
@@ -1399,7 +1407,7 @@ function getPredictionLockText(match) {
     setMissingBonusFields(missing);
     const count = Object.keys(missing).length;
     if (count > 0) {
-      showValidationMessage(`Mancano ${count} campi da compilare. I campi mancanti sono evidenziati in rosso.`);
+      showValidationMessage(formatText(t.validationMissingFields, { count }));
       return false;
     }
 
@@ -1412,7 +1420,7 @@ function getPredictionLockText(match) {
   }
 
   function clearMatchPredictions(matchList) {
-    if (!window.confirm("Vuoi cancellare tutti i pronostici di questa pagina?")) return;
+    if (!window.confirm(t.confirmClearPage)) return;
     const next = { ...predictions };
     matchList.forEach((match) => { if (!isPredictionLocked(match)) delete next[match.id]; });
     setPredictions(next);
@@ -1421,8 +1429,8 @@ function getPredictionLockText(match) {
   }
 
   async function clearBonusSection(type) {
-    if (isTournamentStarted()) { setMessage("Pronostici bloccati: il torneo è già iniziato 🔒"); return; }
-    if (!window.confirm("Vuoi cancellare tutti i pronostici di questa pagina?")) return;
+    if (isTournamentStarted()) { setMessage(`${t.predictionsLockedTournamentStarted} 🔒`); return; }
+    if (!window.confirm(t.confirmClearPage)) return;
     const next = { ...bonusPredictions };
     Object.keys(next).forEach((key) => { if (key.startsWith(`${type}::`)) delete next[key]; });
     setBonusPredictions(next);
@@ -1438,7 +1446,7 @@ function getPredictionLockText(match) {
         .eq("prediction_type", type);
 
       if (error) {
-        setMessage(`Errore cancellazione: ${error.message}`);
+        setMessage(`${t.deleteError}: ${error.message}`);
         return;
       }
 
@@ -1446,12 +1454,12 @@ function getPredictionLockText(match) {
       await loadAllBonusPredictions(selectedLeague.id);
     }
 
-    setMessage("Pronostici cancellati ✅");
+    setMessage(`${t.predictionsDeleted} ✅`);
   }
 
   function clearTopScorerPredictionLocal() {
     if (isTournamentStarted()) { setMessage(t.topScorerPredictionLocked); return; }
-    if (!window.confirm("Vuoi cancellare il pronostico capocannoniere?")) return;
+    if (!window.confirm(t.confirmClearTopScorer || "Vuoi cancellare il pronostico capocannoniere?")) return;
     setSelectedTopScorer("");
   }
 
@@ -1472,7 +1480,7 @@ function getPredictionLockText(match) {
 
 
   async function saveBonusPredictions() {
-    if (isTournamentStarted()) { setMessage("Pronostici bonus bloccati: il torneo è già iniziato 🔒"); return; }
+    if (isTournamentStarted()) { setMessage(`${t.predictionsLockedTournamentStarted} 🔒`); return; }
     if (!selectedLeague?.id || !user?.id) return;
     if ((activeTab === "passaggio-turno" || activeTab === "piazzamento-gironi") && !validateBonusPredictions()) return;
     const rows = [];
@@ -1493,14 +1501,14 @@ function getPredictionLockText(match) {
         updated_at: new Date().toISOString(),
       });
     });
-    if (rows.length === 0) { setMessage("Inserisci almeno un pronostico bonus"); return; }
+    if (rows.length === 0) { setMessage(t.enterAtLeastOnePrediction); return; }
     const { error } = await supabase
       .from("bonus_predictions")
       .upsert(rows, { onConflict: "user_id,league_id,prediction_type,prediction_key" });
     if (error) { setMessage(`${error.message} - Esegui prima bonus_predictions_fixed.sql in Supabase.`); return; }
     await loadBonusPredictions(user.id, selectedLeague.id);
     await loadAllBonusPredictions(selectedLeague.id);
-    setMessage("Pronostici bonus salvati ✅");
+    setMessage(`${t.predictionsSaved} ✅`);
   }
 
   async function saveTopScorerPrediction() {
@@ -1579,7 +1587,7 @@ function getPredictionLockText(match) {
       <div className="page"><div className="card">
         <img src={logo} alt="logo" className="logo" />
         <h1 className="app-title small-title">{t.resetPasswordTitle || "Reset Password"}</h1>
-        <p className="bonus-help">{t.resetPasswordHelp || "Inserisci la nuova password e confermala."}</p>
+        <p className="bonus-help">{t.resetPasswordHelp || t.resetPasswordHelp}</p>
         <input type="password" placeholder={t.newPassword} value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} />
         <input type="password" placeholder={t.confirmPassword} value={resetConfirmPassword} onChange={(e) => setResetConfirmPassword(e.target.value)} />
         <button onClick={submitResetPassword} className="btn blue">{t.updatePassword}</button>
@@ -1636,7 +1644,7 @@ function getPredictionLockText(match) {
     const countdownTargetDate = leagueSettings.prediction_lock_mode === "tournament" ? tournamentStartDate : countdownTargetMatch?.kickoff;
     const countdownParts = getCountdownParts(countdownTargetDate);
     const menuItems = [
-      { key: "home", icon: "🏠", label: t.leagueHome || "Home Lega" },
+      { key: "home", icon: "🏠", label: t.leagueHome || t.leagueHome || "Home" },
       { key: "live", icon: "🔴", label: "Live Match Center" },
       { key: "partite", icon: "📊", label: t.groupPredictions },
       { key: "eliminazione", icon: "🌍", label: t.knockoutPredictions },
@@ -1650,6 +1658,7 @@ function getPredictionLockText(match) {
       { key: "settings", icon: "⚙️", label: t.settings },
       ...(isAdmin ? [{ key: "admin", icon: "🛠️", label: t.admin }, { key: "league-settings", icon: "🎛️", label: t.leagueSettings }] : []),
       { key: "regole", icon: "📜", label: t.rules },
+      { key: "istruzioni", icon: "🎮", label: t.gameInstructions },
     ];
     const activeMenuItem = menuItems.find((item) => item.key === activeTab) || menuItems[0];
     const showQuickActions = ["partite", "eliminazione", "passaggio-turno", "piazzamento-gironi", "capocannoniere"].includes(activeTab);
@@ -1732,23 +1741,48 @@ function getPredictionLockText(match) {
         {activeTab === "regole" && <>
           <h2>{t.rulesTitle}</h2>
           <div className="league-box rules-box">
-            <h3>⚽ Pronostici partite</h3>
-            <p>{leagueSettings.prediction_lock_mode === "tournament"
-              ? "I pronostici di tutte le partite devono essere compilati prima del calcio d’inizio della prima partita del torneo. Dopo l’inizio del torneo non saranno più modificabili."
-              : "I pronostici delle singole partite sono modificabili fino al calcio d’inizio della relativa partita."}</p>
-            <p>🟢 Verde = risultato esatto. 🟡 Giallo = segno corretto.</p>
-            <h3>🎯 Risultato esatto</h3>
-            <p>Modalità attuale: <strong>{leagueSettings.exact_score_mode === "bands" ? "A fasce" : "Standard"}</strong>.</p>
-            {leagueSettings.exact_score_mode === "bands" ? <p>Facili: {leagueSettings.exact_easy_points} pt — Medi: {leagueSettings.exact_medium_points} pt — Difficili: {leagueSettings.exact_hard_points} pt.</p> : <p>Tutti i risultati esatti valgono <strong>{leagueSettings.exact_score_points} pt</strong>.</p>}
-            <p>Segno corretto: <strong>{leagueSettings.outcome_points} pt</strong>.</p>
-            <h3>🏆 Qualificate (PT)</h3>
-            <p>Gli utenti pronosticano squadre qualificate a sedicesimi, ottavi, quarti, semifinali, finale e vincitrice mondiale. Il pronostico si blocca all’inizio della prima partita del torneo.</p>
-            <h3>📊 Classifica Gruppi (PG)</h3>
-            <p>Gli utenti pronosticano la posizione 1ª, 2ª, 3ª e 4ª di ogni girone. Si prende bonus solo per la posizione esatta.</p>
-            <h3>⚽ Golden Boot</h3>
-            <p>Il capocannoniere vale <strong>{leagueSettings.top_scorer_points} pt</strong> e si blocca all’inizio del torneo.</p>
-            <h3>🧮 Classifica</h3>
-            <p>Tot = punti totali, RE = risultati esatti, SC = segni corretti, PT = bonus passaggio turno, PG = bonus piazzamento gironi, CC = bonus capocannoniere.</p>
+            <h3>⚽ {t.rulesMatchPredictions}</h3>
+            <p>{leagueSettings.prediction_lock_mode === "tournament" ? t.rulesAllBeforeStart : t.rulesMatchByMatch}</p>
+            <p>{t.greenExactYellowOutcome}</p>
+
+            <h3>🎯 {t.exactScore}</h3>
+            <p>{t.currentMode}: <strong>{leagueSettings.exact_score_mode === "bands" ? t.exactBands : t.standard}</strong>.</p>
+            {leagueSettings.exact_score_mode === "bands" ? (
+              <p>{t.easy}: {leagueSettings.exact_easy_points} pt — {t.medium}: {leagueSettings.exact_medium_points} pt — {t.hard}: {leagueSettings.exact_hard_points} pt.</p>
+            ) : (
+              <p>{t.allExactScoresWorth} <strong>{leagueSettings.exact_score_points} pt</strong>.</p>
+            )}
+            <p>{t.correctOutcomeShort}: <strong>{leagueSettings.outcome_points} pt</strong>.</p>
+
+            <h3>🏆 {t.qualificationStage} (PT)</h3>
+            <p>{t.qualifiedRulesText}</p>
+
+            <h3>📊 {t.groupPlacement} (PG)</h3>
+            <p>{t.groupRulesText}</p>
+
+            <h3>⚽ {t.topScorer}</h3>
+            <p>{formatText(t.goldenBootRulesText, { points: leagueSettings.top_scorer_points })}</p>
+
+            <h3>🧮 {t.standings}</h3>
+            <p>{t.rankingRulesText}</p>
+          </div>
+        </>}
+
+        {activeTab === "istruzioni" && <>
+          <h2>🎮 {t.instructionsTitle}</h2>
+          <div className="league-box rules-box game-instructions">
+            <h3>1️⃣ {t.matchTab}</h3>
+            <p>{t.instructionsMatch}</p>
+            <h3>2️⃣ {t.qualificationStage}</h3>
+            <p>{t.instructionsQualified}</p>
+            <h3>3️⃣ {t.groupPlacement}</h3>
+            <p>{t.instructionsGroups}</p>
+            <h3>4️⃣ {t.topScorer}</h3>
+            <p>{t.instructionsGoldenBoot}</p>
+            <h3>5️⃣ {t.knockoutStagePredictions}</h3>
+            <p>{t.instructionsKnockout}</p>
+            <h3>6️⃣ {t.participantsRanking}</h3>
+            <p>{t.instructionsRanking}</p>
           </div>
         </>}
 
@@ -1761,7 +1795,10 @@ function getPredictionLockText(match) {
             <select value={language} onChange={(e) => { setLanguage(e.target.value); localStorage.setItem("lang", e.target.value); }}>
               <option value="it">Italiano</option><option value="en">English</option><option value="ro">Română</option>
             </select>
-            <button className="btn green" onClick={updateSettings}>{t.saveSettings}</button>
+            <div className="settings-actions">
+              <button className="btn green" onClick={updateSettings}>{t.saveSettings}</button>
+              <button className="btn blue" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>{t.saveUp}</button>
+            </div>
           </div>
           <div className="league-box">
             <h3>{t.updatePassword}</h3>
@@ -1775,53 +1812,53 @@ function getPredictionLockText(match) {
         {activeTab === "league-settings" && isAdmin && <>
           <h2>{t.leagueSettings}</h2>
           <div className="league-box live-api-box">
-            <h3>🌐 Live API</h3>
+            <h3>🌐 {t.liveApiTitle}</h3>
             <p>La sincronizzazione automatica usa la Supabase Edge Function <strong>sync-live-results</strong>: ogni 10 minuti quando ci sono partite LIVE, ogni 2 ore quando non ci sono partite LIVE. Se non configuri la chiave API, l'app continua a funzionare con i risultati inseriti dall'Control Room.</p>
-            <p><strong>Stato:</strong> {liveSyncStatus || "In attesa della prima sincronizzazione"}</p>
+            <p><strong>{t.syncStatus}:</strong> {liveSyncStatus || t.waitingFirstSync}</p>
           </div>
           <div className="league-box">
-            <h3>⚽ Punti partite</h3>
+            <h3>⚽ {t.matchPointsSettings}</h3>
             <div className="bonus-settings-grid">
               <label>{t.correctOutcome}<input min="0" max="20" type="number" className={missingSettingClass("outcome_points")} value={leagueSettings.outcome_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, outcome_points: Number(e.target.value) })} /></label>
               <label>{t.topScorerPoints}<input min="0" max="50" type="number" className={missingSettingClass("top_scorer_points")} value={leagueSettings.top_scorer_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, top_scorer_points: Number(e.target.value) })} /></label>
             </div>
-            <label>Modalità compilazione pronostici partite</label>
+            <label>{t.predictionLockMode}</label>
             <select className={missingSettingClass("prediction_lock_mode")} value={leagueSettings.prediction_lock_mode || "match"} onChange={(e) => setLeagueSettings({ ...leagueSettings, prediction_lock_mode: e.target.value })}>
-              <option value="match">Partita per partita: ogni pronostico si blocca al calcio d’inizio della relativa partita</option>
-              <option value="stage">Per fase/turno: gironi prima della prima partita del torneo; eliminazione prima del primo match del relativo turno</option>
-              <option value="tournament">Tutte prima: tutti i pronostici si bloccano all’inizio del torneo</option>
+              <option value="match">{t.lockModeMatch}</option>
+              <option value="stage">{t.lockModeStage}</option>
+              <option value="tournament">{t.lockModeTournament}</option>
             </select>
-            <p className="bonus-help">Nota: nella fase a eliminazione il pronostico è legato allo slot della partita, non al nome provvisorio della squadra. Se le squadre vengono definite dopo, il risultato resta valido per quella partita.</p>
-            <label>Modalità risultato esatto</label>
+            <p className="bonus-help">{t.lockModeHelp}</p>
+            <label>{t.exactScoreMode}</label>
             <select className={missingSettingClass("exact_score_mode")} value={leagueSettings.exact_score_mode || "standard"} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_score_mode: e.target.value })}>
-              <option value="standard">Standard: tutti i risultati esatti uguali</option>
-              <option value="bands">A fasce: facile / medio / difficile</option>
+              <option value="standard">{t.exactStandard}</option>
+              <option value="bands">{t.exactBands}</option>
             </select>
             {leagueSettings.exact_score_mode === "bands" ? <div className="bonus-settings-grid">
-              <label>Facili<br/><small>0-0, 1-0, 0-1, 1-1, 2-0, 0-2, 2-1, 1-2</small><input min="0" max="50" type="number" className={missingSettingClass("exact_easy_points")} value={leagueSettings.exact_easy_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_easy_points: Number(e.target.value) })} /></label>
-              <label>Medi<br/><small>2-2, 3-0, 0-3, 3-1, 1-3, 3-2, 2-3</small><input min="0" max="50" type="number" className={missingSettingClass("exact_medium_points")} value={leagueSettings.exact_medium_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_medium_points: Number(e.target.value) })} /></label>
-              <label>Difficili<br/><small>3-3, 4+ gol, 5+ gol, risultati rari</small><input min="0" max="50" type="number" className={missingSettingClass("exact_hard_points")} value={leagueSettings.exact_hard_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_hard_points: Number(e.target.value) })} /></label>
+              <label>{t.easy}<br/><small>{t.easyExamples}</small><input min="0" max="50" type="number" className={missingSettingClass("exact_easy_points")} value={leagueSettings.exact_easy_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_easy_points: Number(e.target.value) })} /></label>
+              <label>{t.medium}<br/><small>{t.mediumExamples}</small><input min="0" max="50" type="number" className={missingSettingClass("exact_medium_points")} value={leagueSettings.exact_medium_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_medium_points: Number(e.target.value) })} /></label>
+              <label>{t.hard}<br/><small>{t.hardExamples}</small><input min="0" max="50" type="number" className={missingSettingClass("exact_hard_points")} value={leagueSettings.exact_hard_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_hard_points: Number(e.target.value) })} /></label>
             </div> : <div className="bonus-settings-grid"><label>{t.exactScorePoints}<input min="0" max="50" type="number" className={missingSettingClass("exact_score_points")} value={leagueSettings.exact_score_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_score_points: Number(e.target.value) })} /></label></div>}
           </div>
           <div className="league-box">
-            <h3>🏆 Bonus facoltativi</h3>
-            <label className="switch-row"><input type="checkbox" checked={!!leagueSettings.enable_qualification_bonus} onChange={(e) => setLeagueSettings({ ...leagueSettings, enable_qualification_bonus: e.target.checked })} /> Attiva passaggio turno</label>
+            <h3>🏆 {t.optionalBonuses}</h3>
+            <label className="switch-row"><input type="checkbox" checked={!!leagueSettings.enable_qualification_bonus} onChange={(e) => setLeagueSettings({ ...leagueSettings, enable_qualification_bonus: e.target.checked })} /> {t.enableQualification}</label>
             {leagueSettings.enable_qualification_bonus && <>
-              <label>Modalità bonus passaggio turno</label>
+              <label>{t.qualificationBonusMode}</label>
               <select className={missingSettingClass("qualification_bonus_mode")} value={leagueSettings.qualification_bonus_mode || "round"} onChange={(e) => setLeagueSettings({ ...leagueSettings, qualification_bonus_mode: e.target.value })}>
-                <option value="fixed">Punteggio fisso per ogni squadra indovinata</option>
-                <option value="round">Punteggio diverso per tappa</option>
+                <option value="fixed">{t.fixedQualificationPoints}</option>
+                <option value="round">{t.roundQualificationPoints}</option>
               </select>
               {leagueSettings.qualification_bonus_mode === "fixed" ? <div className="bonus-settings-grid">
-                <label>Punti fissi per ogni squadra qualificata<input min="0" max="50" type="number" className={missingSettingClass("qualification_fixed_points")} value={leagueSettings.qualification_fixed_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, qualification_fixed_points: Number(e.target.value) })} /></label>
-                <label>Vincente Mondiale<input min="0" max="100" type="number" className={missingSettingClass("bonus_champion_points")} value={leagueSettings.bonus_champion_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_champion_points: Number(e.target.value) })} /></label>
+                <label>{t.fixedPointsEachQualified}<input min="0" max="50" type="number" className={missingSettingClass("qualification_fixed_points")} value={leagueSettings.qualification_fixed_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, qualification_fixed_points: Number(e.target.value) })} /></label>
+                <label>{t.worldChampion}<input min="0" max="100" type="number" className={missingSettingClass("bonus_champion_points")} value={leagueSettings.bonus_champion_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_champion_points: Number(e.target.value) })} /></label>
               </div> : <div className="bonus-settings-grid">
                 {qualificationRounds.map((round) => <label key={round.key}>{round.label}<input min="0" max="50" type="number" className={missingSettingClass(round.pointsKey)} value={leagueSettings[round.pointsKey]} onChange={(e) => setLeagueSettings({ ...leagueSettings, [round.pointsKey]: Number(e.target.value) })} /></label>)}
-                <label>Vincente Mondiale<input min="0" max="100" type="number" className={missingSettingClass("bonus_champion_points")} value={leagueSettings.bonus_champion_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_champion_points: Number(e.target.value) })} /></label>
+                <label>{t.worldChampion}<input min="0" max="100" type="number" className={missingSettingClass("bonus_champion_points")} value={leagueSettings.bonus_champion_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_champion_points: Number(e.target.value) })} /></label>
               </div>}
             </>}
-            <label className="switch-row"><input type="checkbox" checked={!!leagueSettings.enable_group_positions_bonus} onChange={(e) => setLeagueSettings({ ...leagueSettings, enable_group_positions_bonus: e.target.checked })} /> Attiva piazzamento gironi</label>
-            {leagueSettings.enable_group_positions_bonus && <div className="bonus-settings-grid"><label>Posizione esatta nel girone<input min="0" max="50" type="number" className={missingSettingClass("bonus_group_exact_points")} value={leagueSettings.bonus_group_exact_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_group_exact_points: Number(e.target.value) })} /></label></div>}
+            <label className="switch-row"><input type="checkbox" checked={!!leagueSettings.enable_group_positions_bonus} onChange={(e) => setLeagueSettings({ ...leagueSettings, enable_group_positions_bonus: e.target.checked })} /> {t.enableGroupPlacement}</label>
+            {leagueSettings.enable_group_positions_bonus && <div className="bonus-settings-grid"><label>{t.exactGroupPosition}<input min="0" max="50" type="number" className={missingSettingClass("bonus_group_exact_points")} value={leagueSettings.bonus_group_exact_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_group_exact_points: Number(e.target.value) })} /></label></div>}
           </div>
           <button className="btn green" onClick={saveLeagueSettings}>{t.saveLeagueSettings}</button>
         </>}
@@ -1921,24 +1958,24 @@ function getPredictionLockText(match) {
 
 
         {activeTab === "passaggio-turno" && <>
-          <h2>Qualificate</h2>
+          <h2>{t.qualificationStage}</h2>
           <div className="league-box section-sticky-panel">
             <p style={{ color: isTournamentStarted() ? "#f5a524" : "#9fb1c8" }}>
-              {isTournamentStarted() ? "🔒 Pronostici bloccati: il torneo è già iniziato" : `Compilabile fino al calcio d’inizio della prima partita: ${formatTournamentStart()}`}
+              {isTournamentStarted() ? `🔒 ${t.predictionsLockedTournamentStarted}` : formatText(t.editableUntilTournamentStart, { date: formatTournamentStart() })}
             </p>
           </div>
-          {!leagueSettings.enable_qualification_bonus && <div className="league-box"><p>Bonus non attivo in questa lega. L’amministratore può attivarlo da Impostazioni Lega.</p></div>}
+          {!leagueSettings.enable_qualification_bonus && <div className="league-box"><p>{t.bonusNotActive}</p></div>}
           {leagueSettings.enable_qualification_bonus && qualificationRounds.map((round) => {
             const values = getBonusValue("qualification", round.key);
             return <div key={round.key} className="league-box bonus-section">
-              <h3>{round.label} <small>({round.count} squadre - {(leagueSettings.qualification_bonus_mode === "fixed" ? leagueSettings.qualification_fixed_points : leagueSettings[round.pointsKey])} pt ciascuna)</small></h3>
+              <h3>{round.label} <small>({round.count} {t.teams} - {(leagueSettings.qualification_bonus_mode === "fixed" ? leagueSettings.qualification_fixed_points : leagueSettings[round.pointsKey])} {t.pointsEach})</small></h3>
               <div className="bonus-select-grid">
                 {Array.from({ length: round.count }).map((_, index) => {
                   const sourceTeams = getQualificationSourceTeams(round.key);
                   return <select key={index} className={missingBonusClass("qualification", round.key, index)} disabled={isTournamentStarted() || (round.key !== "round32" && sourceTeams.length === 0)} value={values[index] || ""} onChange={(e) => {
                     const next = [...values]; next[index] = e.target.value; setBonusValue("qualification", round.key, next);
                   }}>
-                    <option value="">Squadra {index + 1}</option>
+                    <option value="">{formatText(t.teamNumber, { number: index + 1 })}</option>
                     {getAvailableTeamsForSelection(values, index, sourceTeams).map((team) => <option key={team} value={team}>{team}</option>)}
                   </select>;
                 })}
@@ -1946,38 +1983,38 @@ function getPredictionLockText(match) {
             </div>;
           })}
           {leagueSettings.enable_qualification_bonus && <div className="league-box bonus-section">
-            <h3>🏆 Vincente Mondiale <small>({leagueSettings.bonus_champion_points} pt)</small></h3>
+            <h3>🏆 {t.worldChampion} <small>({leagueSettings.bonus_champion_points} pt)</small></h3>
             <select className={missingBonusClass("qualification", "champion")} disabled={isTournamentStarted()} value={getBonusValue("qualification", "champion") || ""} onChange={(e) => setBonusValue("qualification", "champion", e.target.value)}>
-              <option value="">Seleziona vincente</option>{getAvailableTeamsForSelection([], -1, getQualificationSourceTeams("champion")).map((team) => <option key={team} value={team}>{team}</option>)}
+              <option value="">{t.selectWinner}</option>{getAvailableTeamsForSelection([], -1, getQualificationSourceTeams("champion")).map((team) => <option key={team} value={team}>{team}</option>)}
             </select>
           </div>}
-          <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveBonusPredictions}>Salva Qualificate</button>
-          <button disabled={isTournamentStarted()} className="btn danger legacy-action" onClick={() => clearBonusSection("qualification")}>🗑 Cancella Tutto</button>
+          <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveBonusPredictions}>{t.saveQualifiedTeams}</button>
+          <button disabled={isTournamentStarted()} className="btn danger legacy-action" onClick={() => clearBonusSection("qualification")}>🗑 {t.clearAll}</button>
         </>}
 
         {activeTab === "piazzamento-gironi" && <>
-          <h2>Classifica Gruppi</h2>
+          <h2>{t.groupPlacement}</h2>
           <div className="league-box section-sticky-panel">
             <p style={{ color: isTournamentStarted() ? "#f5a524" : "#9fb1c8" }}>
-              {isTournamentStarted() ? "🔒 Pronostici bloccati: il torneo è già iniziato" : `Compilabile fino al calcio d’inizio della prima partita: ${formatTournamentStart()}`}
+              {isTournamentStarted() ? `🔒 ${t.predictionsLockedTournamentStarted}` : formatText(t.editableUntilTournamentStart, { date: formatTournamentStart() })}
             </p>
           </div>
-          {!leagueSettings.enable_group_positions_bonus && <div className="league-box"><p>Bonus non attivo in questa lega. L’amministratore può attivarlo da Impostazioni Lega.</p></div>}
+          {!leagueSettings.enable_group_positions_bonus && <div className="league-box"><p>{t.bonusNotActive}</p></div>}
           {leagueSettings.enable_group_positions_bonus && groups.map((group) => {
             const values = getBonusValue("group_position", group.name);
             return <div key={group.name} className="league-box bonus-section">
               <h3>{trGroupName(group.name)}</h3>
               <div className="bonus-select-grid compact">
-                {[0, 1, 2, 3].map((index) => <label key={index}>{index + 1}° posizione
+                {[0, 1, 2, 3].map((index) => <label key={index}>{index + 1}° {t.position}
                   <select className={missingBonusClass("group_position", group.name, index)} disabled={isTournamentStarted()} value={values[index] || ""} onChange={(e) => { const next = [...values]; next[index] = e.target.value; setBonusValue("group_position", group.name, next); }}>
-                    <option value="">Seleziona squadra</option>{group.teams.filter((team) => !values.filter((_, i) => i !== index).includes(team)).map((team) => <option key={team} value={team}>{team}</option>)}
+                    <option value="">{t.selectTeam}</option>{group.teams.filter((team) => !values.filter((_, i) => i !== index).includes(team)).map((team) => <option key={team} value={team}>{team}</option>)}
                   </select>
                 </label>)}
               </div>
             </div>;
           })}
-          <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveBonusPredictions}>Salva Classifica Gruppi</button>
-          <button disabled={isTournamentStarted()} className="btn danger legacy-action" onClick={() => clearBonusSection("group_position")}>🗑 Cancella Tutto</button>
+          <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveBonusPredictions}>{t.saveGroupRanking}</button>
+          <button disabled={isTournamentStarted()} className="btn danger legacy-action" onClick={() => clearBonusSection("group_position")}>🗑 {t.clearAll}</button>
         </>}
 
         {activeTab === "capocannoniere" && <>
@@ -1991,7 +2028,7 @@ function getPredictionLockText(match) {
           </div>
           <input
             disabled={isTournamentStarted()}
-            placeholder={t.searchPlayer || "Cerca giocatore"}
+            placeholder={t.searchPlayer}
             value={topScorerSearch}
             onChange={(e) => setTopScorerSearch(e.target.value)}
           />
@@ -1999,7 +2036,7 @@ function getPredictionLockText(match) {
             <option value="">{t.selectPlayer}</option>{filteredTopScorers.map((player) => <option key={player} value={player}>{player}</option>)}
           </select>
           <small style={{ display: "block", color: "#9fb1c8", marginBottom: 10 }}>
-            {playersLoading ? t.loadingPlayers : `${filteredTopScorers.length}/${selectableTopScorers.length} ${t.playersAvailable || "giocatori disponibili"}`}
+            {playersLoading ? t.loadingPlayers : `${filteredTopScorers.length}/${selectableTopScorers.length} ${t.playersAvailable}`}
           </small>
           <button disabled={isTournamentStarted()} className="btn green legacy-action" onClick={saveTopScorerPrediction}>{t.saveTopScorer}</button>
           {renderTopScorerRankingBox()}
@@ -2051,7 +2088,10 @@ function getPredictionLockText(match) {
           <select value={language} onChange={(e) => { setLanguage(e.target.value); localStorage.setItem("lang", e.target.value); }}>
             <option value="it">Italiano</option><option value="en">English</option><option value="ro">Română</option>
           </select>
-          <button className="btn green" onClick={updateSettings}>{t.saveSettings}</button>
+          <div className="settings-actions">
+              <button className="btn green" onClick={updateSettings}>{t.saveSettings}</button>
+              <button className="btn blue" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>{t.saveUp}</button>
+            </div>
         </div>
         <div className="league-box">
           <h3>{t.updatePassword}</h3>
@@ -2075,7 +2115,7 @@ function getPredictionLockText(match) {
           {avatarUrl && <button type="button" className="btn danger" onClick={clearAvatarImage}>Rimuovi foto</button>}
           <div className="modal-actions">
             <button type="button" className="btn blue" onClick={() => setShowAvatarPicker(false)}>Chiudi</button>
-            <button type="button" className="btn green" onClick={async () => { await updateSettings(); setShowAvatarPicker(false); }}>Salva avatar</button>
+            <button type="button" className="btn green" onClick={async () => { await updateSettings(); setShowAvatarPicker(false); }}>{t.saveAvatar || 'Salva avatar'}</button>
           </div>
         </div>
       </div>}

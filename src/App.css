@@ -3776,3 +3776,26 @@ button,
     font-size: 13px;
   }
 }
+
+
+/* STEP 15 - PWA mobile app safe-area support */
+html, body {
+  overscroll-behavior-y: none;
+}
+
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (display-mode: standalone) {
+  body {
+    background: #061426;
+  }
+
+  .app-container,
+  .league-shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+}

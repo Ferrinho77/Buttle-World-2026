@@ -11,6 +11,13 @@ export default function FinalBracket({
   return (
     <>
       <h2>{t.finalBracket}</h2>
+
+      <div className="prediction-real-legend">
+        <span><i className="dot dot-pred"></i>Pronostico</span>
+        <span><i className="dot dot-real"></i>Reale</span>
+        <span><i className="dot dot-exact"></i>Combo esatta</span>
+      </div>
+
       <div className="tournament-bracket final-bracket-view">
         {knockoutRounds.map((round) => (
           <div key={round.round} className="tournament-round">

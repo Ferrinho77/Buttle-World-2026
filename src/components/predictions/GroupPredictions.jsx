@@ -17,7 +17,7 @@ export default function GroupPredictions({
   return (
     <>
       <h2>{t.groupStagePredictions}</h2>
-      <div className="group-predictions-list">
+      <div className="group-predictions-list group-predictions-scroll">
         {sortedMatches.map((match) => {
           const locked = isPredictionLocked(match);
 

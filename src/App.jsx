@@ -28,12 +28,12 @@ function App() {
   const [resetMode, setResetMode] = useState(() => window.location.hash.includes("type=recovery") || window.location.search.includes("type=recovery"));
   const [resetNewPassword, setResetNewPassword] = useState("");
   const [resetConfirmPassword, setResetConfirmPassword] = useState("");
-  const [username, setUsername] = useState("");
-  const [settingsUsername, setSettingsUsername] = useState("");
+  const [username, setPlayername] = useState("");
+  const [settingsPlayername, setSettingsPlayername] = useState("");
   const [avatarIcon, setAvatarIcon] = useState(localStorage.getItem("avatarIcon") || "⚽");
   const [avatarUrl, setAvatarUrl] = useState(localStorage.getItem("avatarUrl") || "");
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [selectedPredictionUser, setSelectedPredictionUser] = useState("__all__");
+  const [selectedPredictionPlayer, setSelectedPredictionPlayer] = useState("__all__");
   const [adminMatchFilter, setAdminMatchFilter] = useState("all");
   const [lastLiveSync, setLastLiveSync] = useState(null);
   const [liveSyncStatus, setLiveSyncStatus] = useState("");
@@ -45,14 +45,14 @@ function App() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [user, setUser] = useState(null);
+  const [user, setPlayer] = useState(null);
   const [leagueName, setLeagueName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [leagues, setLeagues] = useState([]);
   const [selectedLeague, setSelectedLeague] = useState(null);
   const [activeTab, setActiveTab] = useState("home");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [usersSubTab, setUsersSubTab] = useState("match");
+  const [usersSubTab, setPlayersSubTab] = useState("match");
   const [showDashboardSettings, setShowDashboardSettings] = useState(false);
   const [editingLeagueId, setEditingLeagueId] = useState(null);
   const [editingLeagueName, setEditingLeagueName] = useState("");
@@ -180,7 +180,7 @@ function App() {
       : <p style={{ color: result.finished ? "#18c964" : "#58a6ff", fontWeight: "bold" }}>{content}</p>;
   }
 
-  function renderUsersRealResultCell(matchId) {
+  function renderPlayersRealResultCell(matchId) {
     const result = realResults[matchId];
     if (!result) {
       return <td style={{ textAlign: "center", color: "#9fb1c8", fontWeight: "bold" }}>-</td>;
@@ -295,10 +295,10 @@ function App() {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         setResetMode(true);
-        if (session?.user) setUser(session.user);
+        if (session?.user) setPlayer(session.user);
       }
     });
-    checkUser(); loadRealResults(); loadPlayers();
+    checkPlayer(); loadRealResults(); loadPlayers();
     return () => authListener?.subscription?.unsubscribe?.();
   }, []);
 
@@ -467,16 +467,16 @@ function getPredictionLockText(match) {
     const map = {};
     allPredictions.forEach((p) => {
       const key = `${p.user_id}_${p.match_id}`;
-      map[key] = { ...p, username: p.username || p.user_email || "Utente" };
+      map[key] = { ...p, username: p.username || p.user_email || "User" };
     });
     return Object.values(map);
   }
 
-  function getUsersInLeague() {
+  function getPlayersInLeague() {
     return Array.from(new Set([
-      ...uniquePredictions().map((p) => p.username || "Utente"),
-      ...allBonusPredictions.map((p) => p.username || p.user_email || "Utente"),
-      ...allTopScorerPredictions.map((p) => p.username || p.user_email || "Utente"),
+      ...uniquePredictions().map((p) => p.username || "User"),
+      ...allBonusPredictions.map((p) => p.username || p.user_email || "User"),
+      ...allTopScorerPredictions.map((p) => p.username || p.user_email || "User"),
     ]));
   }
 
@@ -682,10 +682,10 @@ function getPredictionLockText(match) {
     setBonusPredictions({ ...bonusPredictions, [`${type}::${key}`]: value });
   }
 
-  function getBonusPredictionMapForUser(name) {
+  function getBonusPredictionMapForPlayer(name) {
     const map = {};
     allBonusPredictions
-      .filter((p) => (p.username || p.user_email || "Utente") === name)
+      .filter((p) => (p.username || p.user_email || "User") === name)
       .forEach((p) => {
         const val = p.prediction_value;
         map[`${p.prediction_type}::${p.prediction_key}`] = Array.isArray(val) ? val : val?.teams || val?.positions || val?.team || val || [];
@@ -693,8 +693,8 @@ function getPredictionLockText(match) {
     return map;
   }
 
-  function getBonusPointsForUser(name) {
-    const map = getBonusPredictionMapForUser(name);
+  function getBonusPointsForPlayer(name) {
+    const map = getBonusPredictionMapForPlayer(name);
     let qualificationPoints = 0;
     let groupPoints = 0;
 
@@ -780,12 +780,12 @@ function getPredictionLockText(match) {
       ranking[name].topScorer = player;
     });
 
-    getUsersInLeague().forEach((name) => {
+    getPlayersInLeague().forEach((name) => {
       if (!ranking[name]) ranking[name] = { name, matchPoints: 0, qualificationBonus: 0, groupBonus: 0, topScorerPoints: 0, total: 0, exact: 0, outcome: 0, topScorer: topScorerPredictions[name] || "" };
     });
 
     Object.values(ranking).forEach((row) => {
-      const bonus = getBonusPointsForUser(row.name);
+      const bonus = getBonusPointsForPlayer(row.name);
       row.qualificationBonus = bonus.qualificationPoints;
       row.groupBonus = bonus.groupPoints;
       row.topScorerPoints = finalScorer && row.topScorer === finalScorer ? leagueSettings.top_scorer_points : 0;
@@ -823,7 +823,7 @@ function getPredictionLockText(match) {
   async function loadProfile(userId) {
     const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
     if (error) { setMessage(error.message); return; }
-    if (data?.username) { setUsername(data.username); setSettingsUsername(data.username); }
+    if (data?.username) { setPlayername(data.username); setSettingsPlayername(data.username); }
     if (data?.avatar_icon) { setAvatarIcon(data.avatar_icon); localStorage.setItem("avatarIcon", data.avatar_icon); }
     if (data?.avatar_url) { setAvatarUrl(data.avatar_url); localStorage.setItem("avatarUrl", data.avatar_url); }
     const savedLang = localStorage.getItem("lang");
@@ -836,11 +836,11 @@ function getPredictionLockText(match) {
   async function updateSettings() {
     localStorage.setItem("avatarIcon", avatarIcon);
     localStorage.setItem("avatarUrl", avatarUrl || "");
-    const nameToSave = settingsUsername || username || user.email.split("@")[0];
+    const nameToSave = settingsPlayername || username || user.email.split("@")[0];
     const { error } = await supabase.from("profiles").upsert({ id: user.id, email: user.email, username: nameToSave, language, avatar_icon: avatarIcon, avatar_url: avatarUrl || null });
     if (error) { setMessage(error.message); return; }
     await supabase.from("predictions").update({ username: nameToSave, user_email: user.email }).eq("user_id", user.id);
-    setUsername(nameToSave); setSettingsUsername(nameToSave);
+    setPlayername(nameToSave); setSettingsPlayername(nameToSave);
     if (selectedLeague) await loadAllPredictions(selectedLeague.id);
     setMessage(`${t.settingsSaved} ✅`);
   }
@@ -858,7 +858,7 @@ function getPredictionLockText(match) {
     const publicUrl = data?.publicUrl || "";
     setAvatarUrl(publicUrl);
     localStorage.setItem("avatarUrl", publicUrl);
-    await supabase.from("profiles").upsert({ id: user.id, email: user.email, username: settingsUsername || username || user.email.split("@")[0], language, avatar_icon: avatarIcon, avatar_url: publicUrl });
+    await supabase.from("profiles").upsert({ id: user.id, email: user.email, username: settingsPlayername || username || user.email.split("@")[0], language, avatar_icon: avatarIcon, avatar_url: publicUrl });
     setMessage("Avatar aggiornato ✅");
   }
 
@@ -880,7 +880,7 @@ function getPredictionLockText(match) {
     if (newPassword !== confirmPassword) { setMessage(t.passwordsDoNotMatch); return; }
     const { error: loginError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
     if (loginError) { setMessage(t.currentPasswordWrong); return; }
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await supabase.auth.updatePlayer({ password: newPassword });
     if (error) { setMessage(error.message); return; }
     setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     setMessage(`${t.passwordUpdated} ✅`);
@@ -1108,13 +1108,13 @@ function getPredictionLockText(match) {
   }
 
 
-  async function checkUser() {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) { setUser(data.user); await loadProfile(data.user.id); loadLeagues(data.user.id); loadPredictions(data.user.id); }
+  async function checkPlayer() {
+    const { data } = await supabase.auth.getPlayer();
+    if (data.user) { setPlayer(data.user); await loadProfile(data.user.id); loadLeagues(data.user.id); loadPredictions(data.user.id); }
   }
 
   async function signUp() {
-    if (!username) { setMessage(t.enterUsername); return; }
+    if (!username) { setMessage(t.enterPlayername); return; }
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) { setMessage(error.message); return; }
     if (data.user) await saveProfile(data.user, username);
@@ -1124,7 +1124,7 @@ function getPredictionLockText(match) {
   async function signIn() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) { setMessage(error.message); return; }
-    setUser(data.user); await loadProfile(data.user.id); loadLeagues(data.user.id); loadPredictions(data.user.id);
+    setPlayer(data.user); await loadProfile(data.user.id); loadLeagues(data.user.id); loadPredictions(data.user.id);
     setMessage(`${t.loginCompleted} ⚽`);
   }
 
@@ -1141,20 +1141,20 @@ function getPredictionLockText(match) {
     if (!resetNewPassword || !resetConfirmPassword) { setMessage(t.fillPasswordFields || "Compila nuova password e conferma"); return; }
     if (resetNewPassword.length < 6) { setMessage(t.passwordMinLength || "La nuova password deve avere almeno 6 caratteri"); return; }
     if (resetNewPassword !== resetConfirmPassword) { setMessage(t.passwordsDoNotMatch || "Le nuove password non coincidono"); return; }
-    const { error } = await supabase.auth.updateUser({ password: resetNewPassword });
+    const { error } = await supabase.auth.updatePlayer({ password: resetNewPassword });
     if (error) { setMessage(error.message); return; }
     setResetNewPassword("");
     setResetConfirmPassword("");
     setResetMode(false);
     window.history.replaceState({}, document.title, window.location.origin);
     await supabase.auth.signOut();
-    setUser(null);
+    setPlayer(null);
     setMessage(t.passwordUpdatedLoginAgain || "Password aggiornata ✅ Ora effettua il login con la nuova password.");
   }
 
   async function logout() {
     await supabase.auth.signOut();
-    setUser(null); setSelectedLeague(null); setLeagues([]); setUsername(""); setSettingsUsername("");
+    setPlayer(null); setSelectedLeague(null); setLeagues([]); setPlayername(""); setSettingsPlayername("");
   }
 
   async function createLeague() {
@@ -1384,7 +1384,7 @@ function getPredictionLockText(match) {
       <div className="page"><div className="card">
         <img src={logo} alt="logo" className="logo" />
         <h1 className="app-title login-title">{t.appTitle}</h1>
-        <input placeholder={t.username} value={username} onChange={(e) => setUsername(e.target.value)} />
+        <input placeholder={t.username} value={username} onChange={(e) => setPlayername(e.target.value)} />
         <input placeholder={t.email} value={email} onChange={(e) => setEmail(e.target.value)} />
         <input type="password" placeholder={t.password} value={password} onChange={(e) => setPassword(e.target.value)} />
         <button onClick={signUp} className="btn green">{t.register}</button>
@@ -1397,8 +1397,8 @@ function getPredictionLockText(match) {
 
   if (selectedLeague) {
     const ranking = getRanking();
-    const users = getUsersInLeague();
-    const filteredUsers = selectedPredictionUser === "__all__" ? users : users.filter((name) => name === selectedPredictionUser);
+    const users = getPlayersInLeague();
+    const filteredPlayers = selectedPredictionPlayer === "__all__" ? users : users.filter((name) => name === selectedPredictionPlayer);
     const knockoutMatches = buildKnockoutMatches();
     const topScorerPredictions = getTopScorerPredictions();
     const confirmedTopScorer = getFinalTopScorer();
@@ -1540,7 +1540,7 @@ function getPredictionLockText(match) {
           <h2>{t.settings}</h2>
           <div className="league-box">
             <label>{t.username}</label>
-            <input value={settingsUsername} onChange={(e) => setSettingsUsername(e.target.value)} />
+            <input value={settingsPlayername} onChange={(e) => setSettingsPlayername(e.target.value)} />
             <label>{t.language}</label>
             <select value={language} onChange={(e) => { setLanguage(e.target.value); localStorage.setItem("lang", e.target.value); }}>
               <option value="it">Italiano</option><option value="en">English</option><option value="ro">Română</option>
@@ -1628,11 +1628,11 @@ function getPredictionLockText(match) {
         {activeTab === "utenti" && <UsersPredictions
           t={t}
           usersSubTab={usersSubTab}
-          setUsersSubTab={setUsersSubTab}
-          selectedPredictionUser={selectedPredictionUser}
-          setSelectedPredictionUser={setSelectedPredictionUser}
+          setPlayersSubTab={setPlayersSubTab}
+          selectedPredictionPlayer={selectedPredictionPlayer}
+          setSelectedPredictionPlayer={setSelectedPredictionPlayer}
           users={users}
-          filteredUsers={filteredUsers}
+          filteredPlayers={filteredPlayers}
           confirmedTopScorer={confirmedTopScorer}
           getCurrentTopScorer={getCurrentTopScorer}
           topScorerPredictions={topScorerPredictions}
@@ -1640,14 +1640,14 @@ function getPredictionLockText(match) {
           knockoutMatches={knockoutMatches}
           trTeamLabel={trTeamLabel}
           formatMatchDateTime={formatMatchDateTime}
-          renderUsersRealResultCell={renderUsersRealResultCell}
+          renderPlayersRealResultCell={renderPlayersRealResultCell}
           uniquePredictions={uniquePredictions}
           realResults={realResults}
           calculatePoints={calculatePoints}
           getPredictionColor={getPredictionColor}
           leagueSettings={leagueSettings}
           qualificationRounds={qualificationRounds}
-          getBonusPredictionMapForUser={getBonusPredictionMapForUser}
+          getBonusPredictionMapForPlayer={getBonusPredictionMapForPlayer}
           getBonusCellColor={getBonusCellColor}
           groups={groups}
           trGroupName={trGroupName}
@@ -1828,7 +1828,7 @@ function getPredictionLockText(match) {
         <div className="league-box">
           <h3>{t.settings}</h3>
           <label>{t.username}</label>
-          <input value={settingsUsername} onChange={(e) => setSettingsUsername(e.target.value)} />
+          <input value={settingsPlayername} onChange={(e) => setSettingsPlayername(e.target.value)} />
           <label>{t.language}</label>
           <select value={language} onChange={(e) => { setLanguage(e.target.value); localStorage.setItem("lang", e.target.value); }}>
             <option value="it">Italiano</option><option value="en">English</option><option value="ro">Română</option>

@@ -3799,3 +3799,51 @@ body {
     min-height: 100dvh;
   }
 }
+
+
+/* STEP 15B - Dashboard/mobile scroll fix */
+html,
+body,
+#root {
+  min-height: 100%;
+  height: auto !important;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+}
+
+body {
+  overscroll-behavior-y: auto !important;
+  touch-action: pan-y !important;
+}
+
+.page,
+.app-container,
+.dashboard,
+.dashboard-page,
+.league-page,
+.league-shell,
+.league-content,
+.card,
+.wide-card {
+  overflow-y: visible !important;
+}
+
+@media (max-width: 760px) {
+  .page,
+  .app-container,
+  .dashboard,
+  .dashboard-page {
+    min-height: 100dvh !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .card,
+  .wide-card,
+  .league-card {
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+}

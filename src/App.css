@@ -3709,3 +3709,70 @@ button,
     font-size: 11px;
   }
 }
+
+
+/* STEP 13D - clean validation all sections */
+.global-validation-alert {
+  position: sticky;
+  top: 100px;
+  z-index: 9000;
+  margin: 8px 0 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 77, 79, .18);
+  border: 1px solid rgba(255, 77, 79, .48);
+  color: #fff;
+  font-weight: 950;
+  box-shadow: 0 12px 26px rgba(0,0,0,.28);
+}
+
+.missing-prediction-field,
+.missing-bonus-field {
+  border-color: #ff4d4f !important;
+  box-shadow: 0 0 0 3px rgba(255,77,79,.32) !important;
+  background: rgba(255,77,79,.12) !important;
+}
+
+@media (max-width: 760px) {
+  .global-validation-alert {
+    top: 112px;
+    font-size: 13px;
+  }
+}
+
+
+/* STEP 13E - Config based validation */
+.missing-setting-field {
+  border-color: #ff4d4f !important;
+  box-shadow: 0 0 0 3px rgba(255,77,79,.30) !important;
+  background: rgba(255,77,79,.10) !important;
+}
+
+
+/* STEP 13G - exact lock mode validation */
+.global-validation-alert {
+  position: sticky;
+  top: 100px;
+  z-index: 9000;
+  margin: 8px 0 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 77, 79, .18);
+  border: 1px solid rgba(255, 77, 79, .48);
+  color: #fff;
+  font-weight: 950;
+  box-shadow: 0 12px 26px rgba(0,0,0,.28);
+}
+
+.missing-prediction-field {
+  border-color: #ff4d4f !important;
+  box-shadow: 0 0 0 3px rgba(255,77,79,.34) !important;
+  background: rgba(255,77,79,.13) !important;
+}
+
+@media (max-width: 760px) {
+  .global-validation-alert {
+    top: 112px;
+    font-size: 13px;
+  }
+}

@@ -41,6 +41,7 @@ export default function KnockoutPredictions({
   renderRealResult,
   renderResultStatus,
   updatePrediction,
+  missingPredictionClass,
   saveAllPredictions,
   clearMatchPredictions,
 }) {
@@ -94,6 +95,7 @@ export default function KnockoutPredictions({
                         <label>
                           <span>Risultato 1</span>
                           <input
+                            className={missingPredictionClass?.(match.id, "home_score") || ""}
                             disabled={locked}
                             type="number"
                             min="0"
@@ -106,6 +108,7 @@ export default function KnockoutPredictions({
                         <label>
                           <span>Risultato 2</span>
                           <input
+                            className={missingPredictionClass?.(match.id, "away_score") || ""}
                             disabled={locked}
                             type="number"
                             min="0"

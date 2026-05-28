@@ -56,6 +56,7 @@ function App() {
   const [showDashboardSettings, setShowDashboardSettings] = useState(false);
   const [editingLeagueId, setEditingLeagueId] = useState(null);
   const [editingLeagueName, setEditingLeagueName] = useState("");
+  const [missingLeagueSettingFields, setMissingLeagueSettingFields] = useState({});
   const [leagueSettings, setLeagueSettings] = useState({
     exact_score_points: 3,
     outcome_points: 1,
@@ -79,7 +80,10 @@ function App() {
   });
   const [isAdmin, setIsAdmin] = useState(false);
   const [predictions, setPredictions] = useState({});
+  const [missingPredictionFields, setMissingPredictionFields] = useState({});
+  const [validationMessage, setValidationMessage] = useState("");
   const [bonusPredictions, setBonusPredictions] = useState({});
+  const [missingBonusFields, setMissingBonusFields] = useState({});
   const [allBonusPredictions, setAllBonusPredictions] = useState([]);
   const [allPredictions, setAllPredictions] = useState([]);
   const [realResults, setRealResults] = useState({});
@@ -100,6 +104,14 @@ function App() {
     player.toLowerCase().includes(topScorerSearch.toLowerCase())
   );
   const t = translations[language] || translations.it;
+
+  useEffect(() => {
+    setValidationMessage("");
+    setMissingPredictionFields({});
+    setMissingBonusFields({});
+    setMissingLeagueSettingFields({});
+  }, [activeTab]);
+
 
   useEffect(() => {
     if (!message) return;
@@ -922,7 +934,67 @@ function getPredictionLockText(match) {
     }
   }
 
+  function validateLeagueSettings() {
+    const missing = {};
+
+    const required = [
+      "outcome_points",
+      "top_scorer_points",
+      "prediction_lock_mode",
+      "exact_score_mode",
+    ];
+
+    if (leagueSettings.exact_score_mode === "bands") {
+      required.push("exact_easy_points", "exact_medium_points", "exact_hard_points");
+    } else {
+      required.push("exact_score_points");
+    }
+
+    if (leagueSettings.enable_qualification_bonus) {
+      required.push("qualification_bonus_mode", "bonus_champion_points");
+
+      if (leagueSettings.qualification_bonus_mode === "fixed") {
+        required.push("qualification_fixed_points");
+      } else {
+        qualificationRounds.forEach((round) => required.push(round.pointsKey));
+      }
+    }
+
+    if (leagueSettings.enable_group_positions_bonus) {
+      required.push("bonus_group_exact_points");
+    }
+
+    required.forEach((key) => {
+      const value = leagueSettings[key];
+      if (value === undefined || value === null || value === "" || Number.isNaN(value)) {
+        missing[key] = true;
+      }
+    });
+
+    setMissingLeagueSettingFields(missing);
+    const count = Object.keys(missing).length;
+
+    if (count > 0) {
+      const text = `Configurazione incompleta: mancano ${count} campi obbligatori. Li ho evidenziati in rosso.`;
+      setMessage(text);
+      setValidationMessage(text);
+      setTimeout(() => {
+        const first = document.querySelector(".missing-setting-field");
+        if (first) first.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+      return false;
+    }
+
+    setValidationMessage("");
+    return true;
+  }
+
+  function missingSettingClass(key) {
+    return missingLeagueSettingFields[key] ? "missing-setting-field" : "";
+  }
+
   async function saveLeagueSettings() {
+    if (!validateLeagueSettings()) return;
     const { error } = await supabase.from("leagues").update(leagueSettings).eq("id", selectedLeague.id);
     if (error) { setMessage(error.message); return; }
     await loadLeagueSettings(selectedLeague.id);
@@ -1224,6 +1296,119 @@ function getPredictionLockText(match) {
 
   function updatePrediction(matchId, field, value) {
     setPredictions({ ...predictions, [matchId]: { ...predictions[matchId], [field]: normalizeScoreInput(value) } });
+    setMissingPredictionFields((prev) => {
+      const next = { ...prev };
+      delete next[`${matchId}::${field}`];
+      return next;
+    });
+  }
+
+  function showValidationMessage(text) {
+    setMessage(text);
+    setValidationMessage(text);
+    setTimeout(() => {
+      const first = document.querySelector(".missing-prediction-field, .missing-bonus-field");
+      if (first) first.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+  }
+
+  function validateMatchPredictions(matchList = matches) {
+    const mode = leagueSettings.prediction_lock_mode || "match";
+
+    // Regole esatte da Configurazione Lega:
+    // match      = partita per partita: nessun obbligo di compilare tutto
+    // stage      = gironi prima della prima partita; fase finale libera per turno/partita
+    // tournament = tutti i pronostici prima: obbligo completo anche in fase finale
+    const shouldRequireComplete =
+      mode === "tournament" ||
+      (mode === "stage" && activeTab === "partite");
+
+    if (!shouldRequireComplete) {
+      setMissingPredictionFields({});
+      setValidationMessage("");
+      return true;
+    }
+
+    const missing = {};
+    matchList.forEach((match) => {
+      if (isPredictionLocked(match)) return;
+      const p = predictions[match.id] || {};
+      if (p.home_score === undefined || p.home_score === "") missing[`${match.id}::home_score`] = true;
+      if (p.away_score === undefined || p.away_score === "") missing[`${match.id}::away_score`] = true;
+    });
+
+    setMissingPredictionFields(missing);
+    const count = Object.keys(missing).length;
+
+    if (count > 0) {
+      const text = `Mancano ${count} risultati da compilare. I campi mancanti sono evidenziati in rosso.`;
+      setMessage(text);
+      setValidationMessage(text);
+
+      setTimeout(() => {
+        const first = document.querySelector(".missing-prediction-field");
+        if (first) first.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 150);
+
+      return false;
+    }
+
+    setValidationMessage("");
+    return true;
+  }
+
+  function missingPredictionClass(matchId, field) {
+    return missingPredictionFields[`${matchId}::${field}`] ? "missing-prediction-field" : "";
+  }
+
+  function getExpectedBonusFieldsForTab() {
+    const expected = [];
+    if (activeTab === "passaggio-turno" && leagueSettings.enable_qualification_bonus) {
+      qualificationRounds.forEach((round) => {
+        for (let index = 0; index < round.count; index += 1) {
+          expected.push({ type: "qualification", key: round.key, index });
+        }
+      });
+      expected.push({ type: "qualification", key: "champion", index: "single" });
+    }
+
+    if (activeTab === "piazzamento-gironi" && leagueSettings.enable_group_positions_bonus) {
+      groups.forEach((group) => {
+        for (let index = 0; index < 4; index += 1) {
+          expected.push({ type: "group_position", key: group.name, index });
+        }
+      });
+    }
+
+    return expected;
+  }
+
+  function validateBonusPredictions() {
+    const expected = getExpectedBonusFieldsForTab();
+    const missing = {};
+
+    expected.forEach((field) => {
+      const value = getBonusValue(field.type, field.key);
+      const empty = field.index === "single"
+        ? !value
+        : !Array.isArray(value) || !value[field.index];
+
+      if (empty) missing[`${field.type}::${field.key}::${field.index}`] = true;
+    });
+
+    setMissingBonusFields(missing);
+    const count = Object.keys(missing).length;
+    if (count > 0) {
+      showValidationMessage(`Mancano ${count} campi da compilare. I campi mancanti sono evidenziati in rosso.`);
+      return false;
+    }
+
+    setValidationMessage("");
+    return true;
+  }
+
+  function missingBonusClass(type, key, index = "single") {
+    return missingBonusFields[`${type}::${key}::${index}`] ? "missing-bonus-field" : "";
   }
 
   function clearMatchPredictions(matchList) {
@@ -1231,14 +1416,37 @@ function getPredictionLockText(match) {
     const next = { ...predictions };
     matchList.forEach((match) => { if (!isPredictionLocked(match)) delete next[match.id]; });
     setPredictions(next);
+    setMissingPredictionFields({});
+    setValidationMessage("");
   }
 
-  function clearBonusSection(type) {
+  async function clearBonusSection(type) {
     if (isTournamentStarted()) { setMessage("Pronostici bloccati: il torneo è già iniziato 🔒"); return; }
     if (!window.confirm("Vuoi cancellare tutti i pronostici di questa pagina?")) return;
     const next = { ...bonusPredictions };
     Object.keys(next).forEach((key) => { if (key.startsWith(`${type}::`)) delete next[key]; });
     setBonusPredictions(next);
+    setMissingBonusFields({});
+    setValidationMessage("");
+
+    if (selectedLeague?.id && user?.id) {
+      const { error } = await supabase
+        .from("bonus_predictions")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("league_id", selectedLeague.id)
+        .eq("prediction_type", type);
+
+      if (error) {
+        setMessage(`Errore cancellazione: ${error.message}`);
+        return;
+      }
+
+      await loadBonusPredictions(user.id, selectedLeague.id);
+      await loadAllBonusPredictions(selectedLeague.id);
+    }
+
+    setMessage("Pronostici cancellati ✅");
   }
 
   function clearTopScorerPredictionLocal() {
@@ -1248,6 +1456,7 @@ function getPredictionLockText(match) {
   }
 
   async function saveAllPredictions(matchList = matches) {
+    if (!validateMatchPredictions(matchList)) return;
     const rows = matchList.filter((match) => {
       const p = predictions[match.id];
       return p && p.home_score !== undefined && p.home_score !== "" && p.away_score !== undefined && p.away_score !== "" && !isPredictionLocked(match);
@@ -1265,6 +1474,7 @@ function getPredictionLockText(match) {
   async function saveBonusPredictions() {
     if (isTournamentStarted()) { setMessage("Pronostici bonus bloccati: il torneo è già iniziato 🔒"); return; }
     if (!selectedLeague?.id || !user?.id) return;
+    if ((activeTab === "passaggio-turno" || activeTab === "piazzamento-gironi") && !validateBonusPredictions()) return;
     const rows = [];
     Object.entries(bonusPredictions).forEach(([compoundKey, value]) => {
       const [prediction_type, prediction_key] = compoundKey.split("::");
@@ -1474,6 +1684,12 @@ function getPredictionLockText(match) {
         onBack={() => setSelectedLeague(null)}
       >
 
+        {validationMessage && (
+          <div className="global-validation-alert">
+            ⚠️ {validationMessage}
+          </div>
+        )}
+
         {activeTab === "home" && <LeagueHome
           t={t}
           lastLiveSync={lastLiveSync}
@@ -1566,46 +1782,46 @@ function getPredictionLockText(match) {
           <div className="league-box">
             <h3>⚽ Punti partite</h3>
             <div className="bonus-settings-grid">
-              <label>{t.correctOutcome}<input min="0" max="20" type="number" value={leagueSettings.outcome_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, outcome_points: Number(e.target.value) })} /></label>
-              <label>{t.topScorerPoints}<input min="0" max="50" type="number" value={leagueSettings.top_scorer_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, top_scorer_points: Number(e.target.value) })} /></label>
+              <label>{t.correctOutcome}<input min="0" max="20" type="number" className={missingSettingClass("outcome_points")} value={leagueSettings.outcome_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, outcome_points: Number(e.target.value) })} /></label>
+              <label>{t.topScorerPoints}<input min="0" max="50" type="number" className={missingSettingClass("top_scorer_points")} value={leagueSettings.top_scorer_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, top_scorer_points: Number(e.target.value) })} /></label>
             </div>
             <label>Modalità compilazione pronostici partite</label>
-            <select value={leagueSettings.prediction_lock_mode || "match"} onChange={(e) => setLeagueSettings({ ...leagueSettings, prediction_lock_mode: e.target.value })}>
+            <select className={missingSettingClass("prediction_lock_mode")} value={leagueSettings.prediction_lock_mode || "match"} onChange={(e) => setLeagueSettings({ ...leagueSettings, prediction_lock_mode: e.target.value })}>
               <option value="match">Partita per partita: ogni pronostico si blocca al calcio d’inizio della relativa partita</option>
               <option value="stage">Per fase/turno: gironi prima della prima partita del torneo; eliminazione prima del primo match del relativo turno</option>
               <option value="tournament">Tutte prima: tutti i pronostici si bloccano all’inizio del torneo</option>
             </select>
             <p className="bonus-help">Nota: nella fase a eliminazione il pronostico è legato allo slot della partita, non al nome provvisorio della squadra. Se le squadre vengono definite dopo, il risultato resta valido per quella partita.</p>
             <label>Modalità risultato esatto</label>
-            <select value={leagueSettings.exact_score_mode || "standard"} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_score_mode: e.target.value })}>
+            <select className={missingSettingClass("exact_score_mode")} value={leagueSettings.exact_score_mode || "standard"} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_score_mode: e.target.value })}>
               <option value="standard">Standard: tutti i risultati esatti uguali</option>
               <option value="bands">A fasce: facile / medio / difficile</option>
             </select>
             {leagueSettings.exact_score_mode === "bands" ? <div className="bonus-settings-grid">
-              <label>Facili<br/><small>0-0, 1-0, 0-1, 1-1, 2-0, 0-2, 2-1, 1-2</small><input min="0" max="50" type="number" value={leagueSettings.exact_easy_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_easy_points: Number(e.target.value) })} /></label>
-              <label>Medi<br/><small>2-2, 3-0, 0-3, 3-1, 1-3, 3-2, 2-3</small><input min="0" max="50" type="number" value={leagueSettings.exact_medium_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_medium_points: Number(e.target.value) })} /></label>
-              <label>Difficili<br/><small>3-3, 4+ gol, 5+ gol, risultati rari</small><input min="0" max="50" type="number" value={leagueSettings.exact_hard_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_hard_points: Number(e.target.value) })} /></label>
-            </div> : <div className="bonus-settings-grid"><label>{t.exactScorePoints}<input min="0" max="50" type="number" value={leagueSettings.exact_score_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_score_points: Number(e.target.value) })} /></label></div>}
+              <label>Facili<br/><small>0-0, 1-0, 0-1, 1-1, 2-0, 0-2, 2-1, 1-2</small><input min="0" max="50" type="number" className={missingSettingClass("exact_easy_points")} value={leagueSettings.exact_easy_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_easy_points: Number(e.target.value) })} /></label>
+              <label>Medi<br/><small>2-2, 3-0, 0-3, 3-1, 1-3, 3-2, 2-3</small><input min="0" max="50" type="number" className={missingSettingClass("exact_medium_points")} value={leagueSettings.exact_medium_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_medium_points: Number(e.target.value) })} /></label>
+              <label>Difficili<br/><small>3-3, 4+ gol, 5+ gol, risultati rari</small><input min="0" max="50" type="number" className={missingSettingClass("exact_hard_points")} value={leagueSettings.exact_hard_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_hard_points: Number(e.target.value) })} /></label>
+            </div> : <div className="bonus-settings-grid"><label>{t.exactScorePoints}<input min="0" max="50" type="number" className={missingSettingClass("exact_score_points")} value={leagueSettings.exact_score_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, exact_score_points: Number(e.target.value) })} /></label></div>}
           </div>
           <div className="league-box">
             <h3>🏆 Bonus facoltativi</h3>
             <label className="switch-row"><input type="checkbox" checked={!!leagueSettings.enable_qualification_bonus} onChange={(e) => setLeagueSettings({ ...leagueSettings, enable_qualification_bonus: e.target.checked })} /> Attiva passaggio turno</label>
             {leagueSettings.enable_qualification_bonus && <>
               <label>Modalità bonus passaggio turno</label>
-              <select value={leagueSettings.qualification_bonus_mode || "round"} onChange={(e) => setLeagueSettings({ ...leagueSettings, qualification_bonus_mode: e.target.value })}>
+              <select className={missingSettingClass("qualification_bonus_mode")} value={leagueSettings.qualification_bonus_mode || "round"} onChange={(e) => setLeagueSettings({ ...leagueSettings, qualification_bonus_mode: e.target.value })}>
                 <option value="fixed">Punteggio fisso per ogni squadra indovinata</option>
                 <option value="round">Punteggio diverso per tappa</option>
               </select>
               {leagueSettings.qualification_bonus_mode === "fixed" ? <div className="bonus-settings-grid">
-                <label>Punti fissi per ogni squadra qualificata<input min="0" max="50" type="number" value={leagueSettings.qualification_fixed_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, qualification_fixed_points: Number(e.target.value) })} /></label>
-                <label>Vincente Mondiale<input min="0" max="100" type="number" value={leagueSettings.bonus_champion_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_champion_points: Number(e.target.value) })} /></label>
+                <label>Punti fissi per ogni squadra qualificata<input min="0" max="50" type="number" className={missingSettingClass("qualification_fixed_points")} value={leagueSettings.qualification_fixed_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, qualification_fixed_points: Number(e.target.value) })} /></label>
+                <label>Vincente Mondiale<input min="0" max="100" type="number" className={missingSettingClass("bonus_champion_points")} value={leagueSettings.bonus_champion_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_champion_points: Number(e.target.value) })} /></label>
               </div> : <div className="bonus-settings-grid">
-                {qualificationRounds.map((round) => <label key={round.key}>{round.label}<input min="0" max="50" type="number" value={leagueSettings[round.pointsKey]} onChange={(e) => setLeagueSettings({ ...leagueSettings, [round.pointsKey]: Number(e.target.value) })} /></label>)}
-                <label>Vincente Mondiale<input min="0" max="100" type="number" value={leagueSettings.bonus_champion_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_champion_points: Number(e.target.value) })} /></label>
+                {qualificationRounds.map((round) => <label key={round.key}>{round.label}<input min="0" max="50" type="number" className={missingSettingClass(round.pointsKey)} value={leagueSettings[round.pointsKey]} onChange={(e) => setLeagueSettings({ ...leagueSettings, [round.pointsKey]: Number(e.target.value) })} /></label>)}
+                <label>Vincente Mondiale<input min="0" max="100" type="number" className={missingSettingClass("bonus_champion_points")} value={leagueSettings.bonus_champion_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_champion_points: Number(e.target.value) })} /></label>
               </div>}
             </>}
             <label className="switch-row"><input type="checkbox" checked={!!leagueSettings.enable_group_positions_bonus} onChange={(e) => setLeagueSettings({ ...leagueSettings, enable_group_positions_bonus: e.target.checked })} /> Attiva piazzamento gironi</label>
-            {leagueSettings.enable_group_positions_bonus && <div className="bonus-settings-grid"><label>Posizione esatta nel girone<input min="0" max="50" type="number" value={leagueSettings.bonus_group_exact_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_group_exact_points: Number(e.target.value) })} /></label></div>}
+            {leagueSettings.enable_group_positions_bonus && <div className="bonus-settings-grid"><label>Posizione esatta nel girone<input min="0" max="50" type="number" className={missingSettingClass("bonus_group_exact_points")} value={leagueSettings.bonus_group_exact_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_group_exact_points: Number(e.target.value) })} /></label></div>}
           </div>
           <button className="btn green" onClick={saveLeagueSettings}>{t.saveLeagueSettings}</button>
         </>}
@@ -1621,6 +1837,7 @@ function getPredictionLockText(match) {
           renderRealResult={renderRealResult}
           renderResultStatus={renderResultStatus}
           updatePrediction={updatePrediction}
+          missingPredictionClass={missingPredictionClass}
           saveAllPredictions={saveAllPredictions}
           clearMatchPredictions={clearMatchPredictions}
         />}
@@ -1697,6 +1914,7 @@ function getPredictionLockText(match) {
           renderRealResult={renderRealResult}
           renderResultStatus={renderResultStatus}
           updatePrediction={updatePrediction}
+          missingPredictionClass={missingPredictionClass}
           saveAllPredictions={saveAllPredictions}
           clearMatchPredictions={clearMatchPredictions}
         />}
@@ -1717,7 +1935,7 @@ function getPredictionLockText(match) {
               <div className="bonus-select-grid">
                 {Array.from({ length: round.count }).map((_, index) => {
                   const sourceTeams = getQualificationSourceTeams(round.key);
-                  return <select key={index} disabled={isTournamentStarted() || (round.key !== "round32" && sourceTeams.length === 0)} value={values[index] || ""} onChange={(e) => {
+                  return <select key={index} className={missingBonusClass("qualification", round.key, index)} disabled={isTournamentStarted() || (round.key !== "round32" && sourceTeams.length === 0)} value={values[index] || ""} onChange={(e) => {
                     const next = [...values]; next[index] = e.target.value; setBonusValue("qualification", round.key, next);
                   }}>
                     <option value="">Squadra {index + 1}</option>
@@ -1729,7 +1947,7 @@ function getPredictionLockText(match) {
           })}
           {leagueSettings.enable_qualification_bonus && <div className="league-box bonus-section">
             <h3>🏆 Vincente Mondiale <small>({leagueSettings.bonus_champion_points} pt)</small></h3>
-            <select disabled={isTournamentStarted()} value={getBonusValue("qualification", "champion") || ""} onChange={(e) => setBonusValue("qualification", "champion", e.target.value)}>
+            <select className={missingBonusClass("qualification", "champion")} disabled={isTournamentStarted()} value={getBonusValue("qualification", "champion") || ""} onChange={(e) => setBonusValue("qualification", "champion", e.target.value)}>
               <option value="">Seleziona vincente</option>{getAvailableTeamsForSelection([], -1, getQualificationSourceTeams("champion")).map((team) => <option key={team} value={team}>{team}</option>)}
             </select>
           </div>}
@@ -1751,7 +1969,7 @@ function getPredictionLockText(match) {
               <h3>{trGroupName(group.name)}</h3>
               <div className="bonus-select-grid compact">
                 {[0, 1, 2, 3].map((index) => <label key={index}>{index + 1}° posizione
-                  <select disabled={isTournamentStarted()} value={values[index] || ""} onChange={(e) => { const next = [...values]; next[index] = e.target.value; setBonusValue("group_position", group.name, next); }}>
+                  <select className={missingBonusClass("group_position", group.name, index)} disabled={isTournamentStarted()} value={values[index] || ""} onChange={(e) => { const next = [...values]; next[index] = e.target.value; setBonusValue("group_position", group.name, next); }}>
                     <option value="">Seleziona squadra</option>{group.teams.filter((team) => !values.filter((_, i) => i !== index).includes(team)).map((team) => <option key={team} value={team}>{team}</option>)}
                   </select>
                 </label>)}

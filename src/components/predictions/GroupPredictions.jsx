@@ -9,6 +9,7 @@ export default function GroupPredictions({
   renderRealResult,
   renderResultStatus,
   updatePrediction,
+  missingPredictionClass,
   saveAllPredictions,
   clearMatchPredictions,
 }) {
@@ -32,6 +33,7 @@ export default function GroupPredictions({
               {renderResultStatus(match.id)}
               <div className="score-row">
                 <input
+                  className={missingPredictionClass?.(match.id, "home_score") || ""}
                   disabled={locked}
                   type="number"
                   min="0"
@@ -41,6 +43,7 @@ export default function GroupPredictions({
                   onChange={(e) => updatePrediction(match.id, "home_score", e.target.value)}
                 />
                 <input
+                  className={missingPredictionClass?.(match.id, "away_score") || ""}
                   disabled={locked}
                   type="number"
                   min="0"

@@ -1,25 +1,41 @@
 {
+  "id": "/",
   "name": "Battle World Cup 2026",
   "short_name": "Battle WC",
-  "description": "Battle World Cup 2026 fantasy prediction game",
-  "start_url": "/",
+  "description": "Fantasy prediction game for the World Cup",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "portrait",
   "background_color": "#061426",
   "theme_color": "#0b2c49",
+  "categories": [
+    "sports",
+    "games",
+    "entertainment"
+  ],
   "icons": [
     {
-      "src": "/pwa-icon.png",
+      "src": "/pwa-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/pwa-icon.png",
+      "src": "/pwa-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

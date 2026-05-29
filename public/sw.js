@@ -1,5 +1,11 @@
-const CACHE_NAME = "battle-world-cup-2026-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/pwa-icon.png"];
+const CACHE_NAME = "battle-world-cup-2026-pwa-v2";
+const APP_SHELL = [
+  "/",
+  "/manifest.webmanifest",
+  "/pwa-icon-192.png",
+  "/pwa-icon-512.png",
+  "/pwa-icon.png"
+];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -34,8 +40,10 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => null);
+        if (response && response.status === 200 && response.type === "basic") {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => null);
+        }
         return response;
       })
       .catch(() => caches.match(request).then((cached) => cached || caches.match("/")))

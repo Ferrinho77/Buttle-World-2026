@@ -314,7 +314,9 @@ export const translations = {
     "backToTop": "Torna su",
     "positionLabel": "Posizione",
     "groupPositionHeader": "Gruppo / Posizione",
-    "positionShort": "Posizione"
+    "positionShort": "Posizione",
+    "noPlayersFound": "Nessun giocatore trovato",
+    "selectedPlayer": "Giocatore selezionato"
   },
   "en": {
     "appTitle": "Battle World Cup 2026",
@@ -631,7 +633,9 @@ export const translations = {
     "backToTop": "Back to top",
     "positionLabel": "Position",
     "groupPositionHeader": "Group / Position",
-    "positionShort": "Position"
+    "positionShort": "Position",
+    "noPlayersFound": "No players found",
+    "selectedPlayer": "Selected player"
   },
   "ro": {
     "appTitle": "Battle World Cup 2026",
@@ -948,6 +952,8 @@ export const translations = {
     "backToTop": "Înapoi sus",
     "positionLabel": "Poziție",
     "groupPositionHeader": "Grupă / Poziție",
-    "positionShort": "Poziție"
+    "positionShort": "Poziție",
+    "noPlayersFound": "Niciun jucător găsit",
+    "selectedPlayer": "Jucător selectat"
   }
 };

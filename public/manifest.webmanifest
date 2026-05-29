@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Battle World Cup 2026",
-  "short_name": "Battle WC",
+  "name": "Battle World Cup",
+  "short_name": "Battle Cup",
   "description": "Fantasy prediction game for the World Cup",
   "start_url": "/?source=pwa",
   "scope": "/",

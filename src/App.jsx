@@ -100,9 +100,17 @@ function App() {
     ...topScorers,
     ...players.map((p) => p.label),
   ])).sort((a, b) => a.localeCompare(b));
-  const filteredTopScorers = selectableTopScorers.filter((player) =>
-    normalizeSearchText(player).includes(normalizeSearchText(topScorerSearch))
-  );
+  const normalizedTopScorerSearch = normalizeSearchText(topScorerSearch);
+  const filteredTopScorers = !normalizedTopScorerSearch
+    ? selectableTopScorers
+    : selectableTopScorers
+        .filter((player) => normalizeSearchText(player).startsWith(normalizedTopScorerSearch))
+        .concat(
+          selectableTopScorers.filter((player) =>
+            !normalizeSearchText(player).startsWith(normalizedTopScorerSearch) &&
+            normalizeSearchText(player).includes(normalizedTopScorerSearch)
+          )
+        );
   const t = translations[language] || translations.it;
 
   function formatText(template, values = {}) {
@@ -2034,15 +2042,47 @@ function getPredictionLockText(match) {
                 : `${t.topScorerPredictionCloses}: ${formatTournamentStart()}`}
             </p>
           </div>
-          <input
-            disabled={isTournamentStarted()}
-            placeholder={t.searchPlayer}
-            value={topScorerSearch}
-            onChange={(e) => setTopScorerSearch(e.target.value)}
-          />
-          <select disabled={isTournamentStarted()} value={selectedTopScorer} onChange={(e) => setSelectedTopScorer(e.target.value)}>
-            <option value="">{t.selectPlayer}</option>{filteredTopScorers.map((player) => <option key={player} value={player}>{player}</option>)}
-          </select>
+          <div className="player-autocomplete">
+            <input
+              disabled={isTournamentStarted()}
+              placeholder={t.searchPlayer}
+              value={topScorerSearch}
+              onChange={(e) => {
+                setTopScorerSearch(e.target.value);
+                setSelectedTopScorer("");
+              }}
+            />
+
+            {topScorerSearch && !isTournamentStarted() && (
+              <div className="player-suggestions">
+                {filteredTopScorers.slice(0, 12).map((player) => (
+                  <button
+                    type="button"
+                    key={player}
+                    className={selectedTopScorer === player ? "active" : ""}
+                    onClick={() => {
+                      setSelectedTopScorer(player);
+                      setTopScorerSearch(player);
+                    }}
+                  >
+                    {player}
+                  </button>
+                ))}
+
+                {filteredTopScorers.length === 0 && (
+                  <div className="player-suggestion-empty">{t.noPlayersFound || "No players found"}</div>
+                )}
+              </div>
+            )}
+
+            {selectedTopScorer && (
+              <div className="selected-player-chip">
+                <span>{t.selectedPlayer || t.selectPlayer}</span>
+                <strong>{selectedTopScorer}</strong>
+              </div>
+            )}
+          </div>
+
           <small style={{ display: "block", color: "#9fb1c8", marginBottom: 10 }}>
             {playersLoading ? t.loadingPlayers : `${filteredTopScorers.length}/${selectableTopScorers.length} ${t.playersAvailable}`}
           </small>

@@ -289,7 +289,7 @@ export default function UsersPredictions({
             <table className="predictions-grid pg-vertical-grid users-predictions-table">
               <thead>
                 <tr>
-                  <th className="sticky-col sticky-head group-pos-head">{t.group} / {t.position}</th>
+                  <th className="sticky-col sticky-head group-pos-head">{t.groupPositionHeader}</th>
                   {filteredPlayers.map((name) => (
                     <th className="sticky-head" key={name}>{name}</th>
                   ))}

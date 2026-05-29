@@ -101,12 +101,20 @@ function App() {
     ...players.map((p) => p.label),
   ])).sort((a, b) => a.localeCompare(b));
   const filteredTopScorers = selectableTopScorers.filter((player) =>
-    player.toLowerCase().includes(topScorerSearch.toLowerCase())
+    normalizeSearchText(player).includes(normalizeSearchText(topScorerSearch))
   );
   const t = translations[language] || translations.it;
 
   function formatText(template, values = {}) {
     return String(template || "").replace(/\{(\w+)\}/g, (_, key) => values[key] ?? "");
+  }
+
+  function normalizeSearchText(value) {
+    return String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
   }
 
   useEffect(() => {
@@ -284,7 +292,7 @@ function App() {
             <table>
               <thead>
                 <tr>
-                  <th>{t.position}</th>
+                  <th>{t.positionLabel}</th>
                   <th>{t.player || t.selectPlayer}</th>
                   <th>{t.goals}</th>
                   <th>{t.status}</th>
@@ -1797,7 +1805,7 @@ function getPredictionLockText(match) {
             </select>
             <div className="settings-actions">
               <button className="btn green" onClick={updateSettings}>{t.saveSettings}</button>
-              <button className="btn blue" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>{t.saveUp}</button>
+              <button className="btn blue" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>{t.backToTop || t.saveUp}</button>
             </div>
           </div>
           <div className="league-box">
@@ -1813,7 +1821,7 @@ function getPredictionLockText(match) {
           <h2>{t.leagueSettings}</h2>
           <div className="league-box live-api-box">
             <h3>🌐 {t.liveApiTitle}</h3>
-            <p>La sincronizzazione automatica usa la Supabase Edge Function <strong>sync-live-results</strong>: ogni 10 minuti quando ci sono partite LIVE, ogni 2 ore quando non ci sono partite LIVE. Se non configuri la chiave API, l'app continua a funzionare con i risultati inseriti dall'Control Room.</p>
+            <p>{t.liveApiInfo}</p>
             <p><strong>{t.syncStatus}:</strong> {liveSyncStatus || t.waitingFirstSync}</p>
           </div>
           <div className="league-box">
@@ -1860,7 +1868,7 @@ function getPredictionLockText(match) {
             <label className="switch-row"><input type="checkbox" checked={!!leagueSettings.enable_group_positions_bonus} onChange={(e) => setLeagueSettings({ ...leagueSettings, enable_group_positions_bonus: e.target.checked })} /> {t.enableGroupPlacement}</label>
             {leagueSettings.enable_group_positions_bonus && <div className="bonus-settings-grid"><label>{t.exactGroupPosition}<input min="0" max="50" type="number" className={missingSettingClass("bonus_group_exact_points")} value={leagueSettings.bonus_group_exact_points} onChange={(e) => setLeagueSettings({ ...leagueSettings, bonus_group_exact_points: Number(e.target.value) })} /></label></div>}
           </div>
-          <button className="btn green" onClick={saveLeagueSettings}>{t.saveLeagueSettings}</button>
+          <button className="btn green" onClick={saveLeagueSettings}>{t.saveConfiguration || t.saveLeagueSettings}</button>
         </>}
 
         {activeTab === "partite" && <GroupPredictions
@@ -1922,7 +1930,7 @@ function getPredictionLockText(match) {
           {lastLiveSync && <p className="live-sync-info">🔄 {t.liveGroupRanking || "Classifica gironi live"}: {lastLiveSync.toLocaleTimeString()} {liveSyncStatus ? `— ${liveSyncStatus}` : ""}</p>}
           {groups.map((group) => <div key={group.name} className="league-box group-table-box">
             <h3>{trGroupName(group.name)}</h3><div className="table-wrapper"><table>
-              <thead><tr><th>{t.position}</th><th>{t.team}</th><th>{t.pts}</th><th>{t.played}</th><th>{t.won}</th><th>{t.drawn}</th><th>{t.lost}</th><th>{t.goalsFor}</th><th>{t.goalsAgainst}</th><th>{t.goalDiff}</th><th>{t.avgGoals}</th></tr></thead>
+              <thead><tr><th>{t.positionLabel}</th><th>{t.team}</th><th>{t.pts}</th><th>{t.played}</th><th>{t.won}</th><th>{t.drawn}</th><th>{t.lost}</th><th>{t.goalsFor}</th><th>{t.goalsAgainst}</th><th>{t.goalDiff}</th><th>{t.avgGoals}</th></tr></thead>
               <tbody>{getGroupStandings(group.name).map((row, index) => <tr key={row.team}><td>{index + 1}</td><td>{row.team}</td><td>{row.points}</td><td>{row.played}</td><td>{row.won}</td><td>{row.drawn}</td><td>{row.lost}</td><td>{row.gf}</td><td>{row.ga}</td><td>{row.gd}</td><td>{row.played > 0 ? (row.gf / row.played).toFixed(2) : "0.00"}</td></tr>)}</tbody>
             </table></div></div>)}
         </>}
@@ -2005,7 +2013,7 @@ function getPredictionLockText(match) {
             return <div key={group.name} className="league-box bonus-section">
               <h3>{trGroupName(group.name)}</h3>
               <div className="bonus-select-grid compact">
-                {[0, 1, 2, 3].map((index) => <label key={index}>{index + 1}° {t.position}
+                {[0, 1, 2, 3].map((index) => <label key={index}>{index + 1}° {t.positionLabel}
                   <select className={missingBonusClass("group_position", group.name, index)} disabled={isTournamentStarted()} value={values[index] || ""} onChange={(e) => { const next = [...values]; next[index] = e.target.value; setBonusValue("group_position", group.name, next); }}>
                     <option value="">{t.selectTeam}</option>{group.teams.filter((team) => !values.filter((_, i) => i !== index).includes(team)).map((team) => <option key={team} value={team}>{team}</option>)}
                   </select>
@@ -2090,7 +2098,7 @@ function getPredictionLockText(match) {
           </select>
           <div className="settings-actions">
               <button className="btn green" onClick={updateSettings}>{t.saveSettings}</button>
-              <button className="btn blue" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>{t.saveUp}</button>
+              <button className="btn blue" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>{t.backToTop || t.saveUp}</button>
             </div>
         </div>
         <div className="league-box">

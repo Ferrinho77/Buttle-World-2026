@@ -63,7 +63,7 @@ export const translations = {
     "exactScorePoints": "Punti risultato esatto",
     "outcomePoints": "Punti segno corretto",
     "topScorerPoints": "Punti capocannoniere",
-    "selectPlayer": "Seleziona user",
+    "selectPlayer": "Seleziona giocatore",
     "saveTopScorer": "Salva capocannoniere",
     "insertRealResults": "Inserisci risultati reali",
     "saveResult": "Salva risultato",
@@ -308,7 +308,13 @@ export const translations = {
     "groupL": "Gruppo L",
     "timelineUnavailable": "Timeline non ancora disponibile",
     "simulatedFallback": "Fallback simulato",
-    "noEvents": "Nessun evento"
+    "noEvents": "Nessun evento",
+    "rankingLegend": "Legenda: Tot = Punti Totali; RE = Risultati Esatti; SC = Segni Corretti; PT = Bonus Passaggio Turno; PG = Bonus Piazzamento Gironi; GB = Bonus Golden Boot.",
+    "saveConfiguration": "Salva configurazione",
+    "backToTop": "Torna su",
+    "positionLabel": "Posizione",
+    "groupPositionHeader": "Gruppo / Posizione",
+    "positionShort": "Posizione"
   },
   "en": {
     "appTitle": "Battle World Cup 2026",
@@ -374,7 +380,7 @@ export const translations = {
     "exactScorePoints": "Exact score points",
     "outcomePoints": "Correct outcome points",
     "topScorerPoints": "Golden Boot points",
-    "selectPlayer": "Select user",
+    "selectPlayer": "Select player",
     "saveTopScorer": "Save Golden Boot",
     "insertRealResults": "Enter actual results",
     "saveResult": "Save result",
@@ -619,7 +625,13 @@ export const translations = {
     "groupL": "Group L",
     "timelineUnavailable": "Timeline not available yet",
     "simulatedFallback": "Simulated fallback",
-    "noEvents": "No events"
+    "noEvents": "No events",
+    "rankingLegend": "Legend: Tot = Total Points; RE = Exact Scores; SC = Correct Outcomes; PT = Qualification Bonus; PG = Group Ranking Bonus; GB = Golden Boot Bonus.",
+    "saveConfiguration": "Save configuration",
+    "backToTop": "Back to top",
+    "positionLabel": "Position",
+    "groupPositionHeader": "Group / Position",
+    "positionShort": "Position"
   },
   "ro": {
     "appTitle": "Battle World Cup 2026",
@@ -685,7 +697,7 @@ export const translations = {
     "exactScorePoints": "Puncte scor exact",
     "outcomePoints": "Puncte semn corect",
     "topScorerPoints": "Puncte Golden Boot",
-    "selectPlayer": "Selectează user",
+    "selectPlayer": "Selectează jucătorul",
     "saveTopScorer": "Salvează Golden Boot",
     "insertRealResults": "Introdu rezultatele reale",
     "saveResult": "Salvează rezultatul",
@@ -930,6 +942,12 @@ export const translations = {
     "groupL": "Grupa L",
     "timelineUnavailable": "Timeline indisponibilă momentan",
     "simulatedFallback": "Fallback simulat",
-    "noEvents": "Niciun eveniment"
+    "noEvents": "Niciun eveniment",
+    "rankingLegend": "Legendă: Tot = Puncte Totale; RE = Scoruri Exacte; SC = Semne Corecte; PT = Bonus Calificare; PG = Bonus Clasament Grupe; GB = Bonus Golden Boot.",
+    "saveConfiguration": "Salvează configurația",
+    "backToTop": "Înapoi sus",
+    "positionLabel": "Poziție",
+    "groupPositionHeader": "Grupă / Poziție",
+    "positionShort": "Poziție"
   }
 };

@@ -3958,3 +3958,18 @@ body {
 .settings-actions .btn {
   flex: 1 1 160px;
 }
+
+
+
+
+
+/* STEP 17B - fix pack */
+.group-pos-head,
+.group-pos-cell,
+th {
+  white-space: nowrap;
+}
+
+input::placeholder {
+  opacity: .75;
+}

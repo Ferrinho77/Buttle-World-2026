@@ -40,7 +40,7 @@ export default function ParticipantsRanking({
           <table>
             <thead>
               <tr>
-                <th>{t.position}</th>
+                <th>{t.positionLabel}</th>
                 <th>{t.participant || t.user}</th>
                 <th>Tot</th>
                 <th>RE</th>
@@ -89,9 +89,7 @@ export default function ParticipantsRanking({
       )}
 
       <div className="league-box">
-        <p>
-          <strong>Legenda:</strong> Tot = Punti Totali; RE = Risultati Esatti; SC = Segni Corretti; PT = Bonus Qualificate; PG = Bonus Classifica Gruppi; CC = Bonus Golden Boot.
-        </p>
+        <p>{t.rankingLegend}</p>
       </div>
     </>
   );

@@ -4116,3 +4116,52 @@ input::placeholder {
     padding: 9px 8px;
   }
 }
+
+
+/* STEP 18F - smart rules */
+.smart-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  margin: 12px 0 18px;
+}
+
+.smart-rule-card {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.055);
+  border: 1px solid rgba(88,166,255,.16);
+  box-shadow: 0 12px 28px rgba(0,0,0,.16);
+}
+
+.smart-rule-card strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #fff;
+  font-size: 15px;
+}
+
+.smart-rule-card p {
+  margin: 0;
+  color: #d8e8ff;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.smart-rules-list {
+  display: grid;
+  gap: 8px;
+  padding-left: 20px;
+  color: #d8e8ff;
+  font-weight: 850;
+}
+
+@media (max-width: 760px) {
+  .smart-rules-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .smart-rule-card {
+    padding: 12px;
+  }
+}

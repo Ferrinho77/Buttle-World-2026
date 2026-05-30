@@ -1782,36 +1782,76 @@ function getPredictionLockText(match) {
 
         {activeTab === "regole" && <>
           <h2>📖 {t.rulesTitle}</h2>
-          <div className="league-box rules-box">
-            <p className="rules-intro">{t.rulesIntro}</p>
+          <div className="league-box rules-box smart-rules-box">
+            <p className="rules-intro">{t.smartRulesIntro}</p>
 
-            <h3>⚽ {t.matchPredictionsRulesTitle}</h3>
-            <p>{t.matchPredictionsRulesText}</p>
-            <p><strong>{t.lockModeCurrent}:</strong> {
-              leagueSettings.prediction_lock_mode === "tournament"
-                ? t.lockModeTournament
-                : leagueSettings.prediction_lock_mode === "stage"
-                  ? t.lockModeStage
-                  : t.lockModeMatch
-            }</p>
+            <h3>⚙️ {t.rulesCurrentSetup}</h3>
+            <div className="smart-rules-grid">
+              <div className="smart-rule-card">
+                <strong>⚽ {t.matchPredictionsRulesTitle}</strong>
+                <p>
+                  {leagueSettings.prediction_lock_mode === "tournament"
+                    ? t.lockModeTournamentRule
+                    : leagueSettings.prediction_lock_mode === "stage"
+                      ? t.lockModeStageRule
+                      : t.lockModeMatchRule}
+                </p>
+              </div>
 
-            <h3>✅ {t.qualifiedRulesTitle}</h3>
-            <p>
-              <strong>{leagueSettings.enable_qualification_bonus ? t.active : t.inactive}.</strong>{" "}
-              {t.qualifiedRulesTextFull}
-            </p>
+              <div className="smart-rule-card">
+                <strong>🎯 {t.exactScore}</strong>
+                <p>
+                  {leagueSettings.exact_score_mode === "bands"
+                    ? t.exactModeBandsRule
+                    : t.exactModeStandardRule}
+                </p>
+              </div>
 
-            <h3>📊 {t.groupRankingRulesTitle}</h3>
-            <p>
-              <strong>{leagueSettings.enable_group_positions_bonus ? t.active : t.inactive}.</strong>{" "}
-              {t.groupRankingRulesTextFull}
-            </p>
+              <div className="smart-rule-card">
+                <strong>✅ {t.qualifiedRulesTitle}</strong>
+                <p>
+                  {!leagueSettings.enable_qualification_bonus
+                    ? t.qualificationInactiveRule
+                    : leagueSettings.qualification_bonus_mode === "fixed"
+                      ? t.qualificationActiveFixedRule
+                      : t.qualificationActiveRoundRule}
+                </p>
+              </div>
 
-            <h3>🥾 {t.goldenBootRulesTitle}</h3>
-            <p>{t.goldenBootRulesTextFull}</p>
+              <div className="smart-rule-card">
+                <strong>📊 {t.groupRankingRulesTitle}</strong>
+                <p>
+                  {leagueSettings.enable_group_positions_bonus
+                    ? t.groupPlacementActiveRule
+                    : t.groupPlacementInactiveRule}
+                </p>
+              </div>
 
-            <h3>🏆 {t.rankingRulesTitle}</h3>
-            <p>{t.rankingRulesTextFull}</p>
+              <div className="smart-rule-card">
+                <strong>🥾 {t.goldenBootRulesTitle}</strong>
+                <p>{t.goldenBootActiveRule}</p>
+              </div>
+
+              <div className="smart-rule-card">
+                <strong>🏆 {t.rankingRulesTitle}</strong>
+                <p>{t.rankingRulesTextFull}</p>
+              </div>
+            </div>
+
+            <h3>🧮 {t.whatCounts}</h3>
+            <ul className="smart-rules-list">
+              <li>{t.correctOutcomePointsLabel}</li>
+              <li>
+                {leagueSettings.exact_score_mode === "bands"
+                  ? `${t.exactEasyPointsLabel} / ${t.exactMediumPointsLabel} / ${t.exactHardPointsLabel}`
+                  : t.exactStandardPointsLabel}
+              </li>
+              {leagueSettings.enable_qualification_bonus && <li>{t.qualificationStage}</li>}
+              {leagueSettings.enable_group_positions_bonus && <li>{t.groupPlacement}</li>}
+              <li>{t.goldenBootPointsLabel}</li>
+            </ul>
+
+            <p className="rules-intro">{t.goToPointsForValues}</p>
           </div>
         </>}
 

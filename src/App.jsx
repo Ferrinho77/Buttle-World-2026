@@ -331,10 +331,22 @@ function App() {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         setResetMode(true);
-        if (session?.user) setPlayer(session.user);
+      }
+
+      if (session?.user) {
+        setPlayer(session.user);
+        loadProfile(session.user.id);
+        loadLeagues(session.user.id);
+        loadPredictions(session.user.id);
+      } else {
+        setPlayer(null);
       }
     });
-    checkPlayer(); loadRealResults(); loadPlayers();
+
+    checkPlayer();
+    loadRealResults();
+    loadPlayers();
+
     return () => authListener?.subscription?.unsubscribe?.();
   }, []);
 
@@ -1205,8 +1217,21 @@ function getPredictionLockText(match) {
 
 
   async function checkPlayer() {
-    const { data } = await supabase.auth.getPlayer();
-    if (data.user) { setPlayer(data.user); await loadProfile(data.user.id); loadLeagues(data.user.id); loadPredictions(data.user.id); }
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error("Session restore error:", error.message);
+      return;
+    }
+
+    const currentUser = data.session?.user || null;
+    if (currentUser) {
+      setPlayer(currentUser);
+      await loadProfile(currentUser.id);
+      loadLeagues(currentUser.id);
+      loadPredictions(currentUser.id);
+    } else {
+      setPlayer(null);
+    }
   }
 
   async function signUp() {

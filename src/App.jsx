@@ -1699,6 +1699,7 @@ function getPredictionLockText(match) {
       { key: "settings", icon: "⚙️", label: t.settings },
       ...(isAdmin ? [{ key: "admin", icon: "🛠️", label: t.admin }, { key: "league-settings", icon: "🎛️", label: t.leagueSettings }] : []),
       { key: "regole", icon: "📜", label: t.rules },
+      { key: "punteggi", icon: "🏆", label: t.pointsSystem },
       { key: "istruzioni", icon: "🎮", label: t.gameInstructions },
     ];
     const activeMenuItem = menuItems.find((item) => item.key === activeTab) || menuItems[0];
@@ -1780,50 +1781,178 @@ function getPredictionLockText(match) {
         )}
 
         {activeTab === "regole" && <>
-          <h2>{t.rulesTitle}</h2>
+          <h2>📖 {t.rulesTitle}</h2>
           <div className="league-box rules-box">
-            <h3>⚽ {t.rulesMatchPredictions}</h3>
-            <p>{leagueSettings.prediction_lock_mode === "tournament" ? t.rulesAllBeforeStart : t.rulesMatchByMatch}</p>
-            <p>{t.greenExactYellowOutcome}</p>
+            <p className="rules-intro">{t.rulesIntro}</p>
 
-            <h3>🎯 {t.exactScore}</h3>
-            <p>{t.currentMode}: <strong>{leagueSettings.exact_score_mode === "bands" ? t.exactBands : t.standard}</strong>.</p>
-            {leagueSettings.exact_score_mode === "bands" ? (
-              <p>{t.easy}: {leagueSettings.exact_easy_points} pt — {t.medium}: {leagueSettings.exact_medium_points} pt — {t.hard}: {leagueSettings.exact_hard_points} pt.</p>
-            ) : (
-              <p>{t.allExactScoresWorth} <strong>{leagueSettings.exact_score_points} pt</strong>.</p>
-            )}
-            <p>{t.correctOutcomeShort}: <strong>{leagueSettings.outcome_points} pt</strong>.</p>
+            <h3>⚽ {t.matchPredictionsRulesTitle}</h3>
+            <p>{t.matchPredictionsRulesText}</p>
+            <p><strong>{t.lockModeCurrent}:</strong> {
+              leagueSettings.prediction_lock_mode === "tournament"
+                ? t.lockModeTournament
+                : leagueSettings.prediction_lock_mode === "stage"
+                  ? t.lockModeStage
+                  : t.lockModeMatch
+            }</p>
 
-            <h3>🏆 {t.qualificationStage} (PT)</h3>
-            <p>{t.qualifiedRulesText}</p>
+            <h3>✅ {t.qualifiedRulesTitle}</h3>
+            <p>
+              <strong>{leagueSettings.enable_qualification_bonus ? t.active : t.inactive}.</strong>{" "}
+              {t.qualifiedRulesTextFull}
+            </p>
 
-            <h3>📊 {t.groupPlacement} (PG)</h3>
-            <p>{t.groupRulesText}</p>
+            <h3>📊 {t.groupRankingRulesTitle}</h3>
+            <p>
+              <strong>{leagueSettings.enable_group_positions_bonus ? t.active : t.inactive}.</strong>{" "}
+              {t.groupRankingRulesTextFull}
+            </p>
 
-            <h3>⚽ {t.topScorer}</h3>
-            <p>{formatText(t.goldenBootRulesText, { points: leagueSettings.top_scorer_points })}</p>
+            <h3>🥾 {t.goldenBootRulesTitle}</h3>
+            <p>{t.goldenBootRulesTextFull}</p>
 
-            <h3>🧮 {t.standings}</h3>
-            <p>{t.rankingRulesText}</p>
+            <h3>🏆 {t.rankingRulesTitle}</h3>
+            <p>{t.rankingRulesTextFull}</p>
           </div>
         </>}
 
-        {activeTab === "istruzioni" && <>
-          <h2>🎮 {t.instructionsTitle}</h2>
-          <div className="league-box rules-box game-instructions">
-            <h3>1️⃣ {t.matchTab}</h3>
-            <p>{t.instructionsMatch}</p>
-            <h3>2️⃣ {t.qualificationStage}</h3>
-            <p>{t.instructionsQualified}</p>
-            <h3>3️⃣ {t.groupPlacement}</h3>
-            <p>{t.instructionsGroups}</p>
-            <h3>4️⃣ {t.topScorer}</h3>
-            <p>{t.instructionsGoldenBoot}</p>
-            <h3>5️⃣ {t.knockoutStagePredictions}</h3>
-            <p>{t.instructionsKnockout}</p>
-            <h3>6️⃣ {t.participantsRanking}</h3>
-            <p>{t.instructionsRanking}</p>
+        {activeTab === "punteggi" && <>
+          <h2>🏆 {t.pointsSystemTitle}</h2>
+          <div className="league-box rules-box points-system-box">
+            <p className="rules-intro">{t.pointsIntro}</p>
+
+            <h3>⚽ {t.matchPointsCategory}</h3>
+            <div className="points-table-wrap">
+              <table className="points-system-table">
+                <thead>
+                  <tr>
+                    <th>{t.pointsEvent}</th>
+                    <th>{t.pointsValue}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{t.correctOutcomePointsLabel}</td>
+                    <td>{leagueSettings.outcome_points}</td>
+                  </tr>
+                  {leagueSettings.exact_score_mode === "bands" ? (
+                    <>
+                      <tr>
+                        <td>{t.exactEasyPointsLabel}</td>
+                        <td>{leagueSettings.exact_easy_points}</td>
+                      </tr>
+                      <tr>
+                        <td>{t.exactMediumPointsLabel}</td>
+                        <td>{leagueSettings.exact_medium_points}</td>
+                      </tr>
+                      <tr>
+                        <td>{t.exactHardPointsLabel}</td>
+                        <td>{leagueSettings.exact_hard_points}</td>
+                      </tr>
+                    </>
+                  ) : (
+                    <tr>
+                      <td>{t.exactStandardPointsLabel}</td>
+                      <td>{leagueSettings.exact_score_points}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <h3>✅ {t.qualificationPointsCategory}</h3>
+            <div className="points-table-wrap">
+              <table className="points-system-table">
+                <thead>
+                  <tr>
+                    <th>{t.pointsEvent}</th>
+                    <th>{t.pointsValue}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!leagueSettings.enable_qualification_bonus ? (
+                    <tr>
+                      <td>{t.qualificationStage}</td>
+                      <td>{t.inactive}</td>
+                    </tr>
+                  ) : leagueSettings.qualification_bonus_mode === "fixed" ? (
+                    <tr>
+                      <td>{t.qualifiedFixedPointsLabel}</td>
+                      <td>{leagueSettings.qualification_fixed_points}</td>
+                    </tr>
+                  ) : (
+                    <>
+                      <tr>
+                        <td>{t.round32PointsLabel}</td>
+                        <td>{leagueSettings.bonus_round32_points}</td>
+                      </tr>
+                      <tr>
+                        <td>{t.round16PointsLabel}</td>
+                        <td>{leagueSettings.bonus_round16_points}</td>
+                      </tr>
+                      <tr>
+                        <td>{t.quarterPointsLabel}</td>
+                        <td>{leagueSettings.bonus_quarter_points}</td>
+                      </tr>
+                      <tr>
+                        <td>{t.semiPointsLabel}</td>
+                        <td>{leagueSettings.bonus_semi_points}</td>
+                      </tr>
+                      <tr>
+                        <td>{t.finalPointsLabel}</td>
+                        <td>{leagueSettings.bonus_final_points}</td>
+                      </tr>
+                    </>
+                  )}
+                  <tr>
+                    <td>{t.championPointsLabel}</td>
+                    <td>{leagueSettings.bonus_champion_points}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3>📊 {t.groupPointsCategory}</h3>
+            <div className="points-table-wrap">
+              <table className="points-system-table">
+                <thead>
+                  <tr>
+                    <th>{t.pointsEvent}</th>
+                    <th>{t.pointsValue}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leagueSettings.enable_group_positions_bonus ? (
+                    <tr>
+                      <td>{t.groupExactPointsLabel}</td>
+                      <td>{leagueSettings.bonus_group_exact_points}</td>
+                    </tr>
+                  ) : (
+                    <tr>
+                      <td>{t.groupPlacement}</td>
+                      <td>{t.inactive}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <h3>🥾 {t.bonusPointsCategory}</h3>
+            <div className="points-table-wrap">
+              <table className="points-system-table">
+                <thead>
+                  <tr>
+                    <th>{t.pointsEvent}</th>
+                    <th>{t.pointsValue}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{t.goldenBootPointsLabel}</td>
+                    <td>{leagueSettings.top_scorer_points}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </>}
 
